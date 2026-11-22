@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Login — Nutrition Lab</title>
+<link rel="stylesheet" href="/css/style.css">
+<style>
+body{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:6rem 1.5rem 2rem}
+.auth-wrap{width:100%;max-width:440px}
+.auth-card{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:2.25rem}
+.auth-logo{display:flex;align-items:center;gap:0.5rem;margin-bottom:2rem}
+.tabs{display:flex;border-bottom:1px solid var(--border3);margin-bottom:1.75rem}
+.tab-btn{flex:1;padding:0.7rem;font-family:var(--font);font-size:0.88rem;font-weight:600;color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;transition:all 0.2s}
+.tab-btn.active{color:var(--neon);border-bottom-color:var(--neon)}
+.auth-form{display:flex;flex-direction:column;gap:1rem}
+.row-2{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem}
+.auth-btn{background:var(--neon);color:#080C0A;border:none;border-radius:10px;padding:0.78rem;font-weight:700;font-size:0.95rem;font-family:var(--font);cursor:pointer;transition:all 0.2s;width:100%}
+.auth-btn:hover{opacity:0.88;transform:translateY(-1px)}
+.auth-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+.auth-divider{text-align:center;font-size:0.78rem;color:var(--muted);margin:0.5rem 0}
+.demo-btn{width:100%;padding:0.65rem;border-radius:10px;background:rgba(57,255,106,0.06);border:1px solid var(--border);color:var(--neon);font-family:var(--font);font-size:0.85rem;font-weight:600;cursor:pointer;transition:all 0.2s}
+.demo-btn:hover{background:rgba(57,255,106,0.12)}
+.error-box{background:rgba(255,80,80,0.08);border:1px solid rgba(255,80,80,0.3);border-radius:10px;padding:0.75rem 1rem;font-size:0.83rem;color:#ff8080;display:none}
+.error-box.show{display:block}
+</style>
+</head>
+<body>
+<script src="/js/api.js"></script>
+<script>redirectIfLoggedIn();</script>
+
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="logo-icon">🔬</div>
+      <span class="logo-text">Nutrition<span style="color:var(--neon)">Lab</span></span>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('login')">Log In</button>
+      <button class="tab-btn" onclick="switchTab('register')">Sign Up</button>
+    </div>
+
+    <div id="error-box" class="error-box"></div>
+
+    <!-- LOGIN FORM -->
+    <form id="login-form" class="auth-form" onsubmit="doLogin(event)">
+      <div class="form-group"><label>Email</label><input type="email" id="l-email" placeholder="alex@nutritionlab.com" required></div>
+      <div class="form-group"><label>Password</label><input type="password" id="l-password" placeholder="••••••••" required></div>
+      <button type="submit" class="auth-btn" id="l-btn">Log In →</button>
+    </form>
+
+    <!-- REGISTER FORM -->
+    <form id="reg-form" class="auth-form" style="display:none" onsubmit="doRegister(event)">
+      <div class="form-group"><label>Full Name</label><input type="text" id="r-name" placeholder="Alex Hassan" required></div>
+      <div class="row-2">
+        <div class="form-group"><label>Email</label><input type="email" id="r-email" placeholder="alex@email.com" required></div>
+        <div class="form-group"><label>Password</label><input type="password" id="r-password" placeholder="6+ chars" required></div>
+      </div>
+      <div class="row-2">
+        <div class="form-group"><label>Age</label><input type="number" id="r-age" placeholder="24" min="10" max="100"></div>
+        <div class="form-group"><label>Gender</label>
+          <select id="r-gender"><option value="male">Male</option><option value="female">Female</option></select>
+        </div>
+      </div>
+      <div class="row-2">
+        <div class="form-group"><label>Weight (kg)</label><input type="number" id="r-weight" placeholder="75" min="30" max="300"></div>
+        <div class="form-group"><label>Height (cm)</label><input type="number" id="r-height" placeholder="175" min="100" max="250"></div>
+      </div>
+      <div class="form-group"><label>Activity Level</label>
+        <select id="r-activity">
+          <option value="sedentary">Sedentary (desk job)</option>
+          <option value="light">Lightly active (1-3x/week)</option>
+          <option value="moderate" selected>Moderately active (3-5x/week)</option>
+          <option value="active">Very active (6-7x/week)</option>
+          <option value="athlete">Athlete (2x/day)</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Goal</label>
+        <select id="r-goal">
+          <option value="cut">Lose weight (cut)</option>
+          <option value="maintain" selected>Maintain weight</option>
+          <option value="bulk">Bulk up</option>
+          <option value="recomp">Body recomposition</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Goal Weight (kg) <span style="font-weight:400;opacity:0.6">optional</span></label>
+        <input type="number" id="r-goal-weight" placeholder="e.g. 75" step="0.1" min="30" max="300">
+      </div>
+      <button type="submit" class="auth-btn" id="r-btn">Create Account →</button>
+    </form>
+
+    <div class="auth-divider">— or —</div>
+    <button class="demo-btn" onclick="demoLogin()">🔬 Use Demo Account</button>
+  </div>
+
+  <div style="text-align:center;margin-top:1.25rem;font-size:0.8rem;color:var(--muted)">
+    <a href="/index.html" style="color:var(--muted);text-decoration:none">← Back to Home</a>
+  </div>
+</div>
+
+<script>
+let activeTab = 'login';
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',(i===0&&tab==='login')||(i===1&&tab==='register')));
+  document.getElementById('login-form').style.display = tab==='login'?'flex':'none';
+  document.getElementById('reg-form').style.display   = tab==='register'?'flex':'none';
+  showError('');
+}
+function showError(msg) {
+  const box = document.getElementById('error-box');
+  box.textContent = msg; box.classList.toggle('show', !!msg);
+}
+function setLoading(id, loading) {
+  const btn = document.getElementById(id);
+  btn.disabled = loading; btn.textContent = loading ? 'Please wait…' : (id==='l-btn'?'Log In →':'Create Account →');
+}
+
+async function doLogin(e) {
+  e.preventDefault(); showError(''); setLoading('l-btn', true);
+  try {
+    const data = await API.login({ email: document.getElementById('l-email').value, password: document.getElementById('l-password').value });
+    Auth.setToken(data.token); Auth.setUser(data.user);
+    window.location.href = '/pages/dashboard.html';
+  } catch(err) { showError(err.message); setLoading('l-btn', false); }
+}
+
+async function doRegister(e) {
+  e.preventDefault(); showError(''); setLoading('r-btn', true);
+  try {
+    const data = await API.register({
+      name: document.getElementById('r-name').value,
+      email: document.getElementById('r-email').value,
+      password: document.getElementById('r-password').value,
+      age: document.getElementById('r-age').value,
+      gender: document.getElementById('r-gender').value,
+      weight: document.getElementById('r-weight').value,
+      height: document.getElementById('r-height').value,
+      activity_level: document.getElementById('r-activity').value,
+      goal: document.getElementById('r-goal').value,
+      goal_weight: document.getElementById('r-goal-weight').value || 0,
+    });
+    Auth.setToken(data.token); Auth.setUser(data.user);
+    window.location.href = '/pages/dashboard.html';
+  } catch(err) { showError(err.message); setLoading('r-btn', false); }
+}
+
+async function demoLogin() {
+  showError('');
+  try {
+    const data = await API.login({ email: 'alex@nutritionlab.com', password: 'demo123' });
+    Auth.setToken(data.token); Auth.setUser(data.user);
+    window.location.href = '/pages/dashboard.html';
+  } catch(err) { showError(err.message); }
+}
+</script>
+</body>
+</html>

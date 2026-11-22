@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Workout Lab — Nutrition Lab</title>
+<link rel="stylesheet" href="/css/style.css">
+<style>
+.page-wrap{padding-top:5.5rem;padding-bottom:4rem}
+.page-header{padding:2rem 0 1.5rem;border-bottom:1px solid var(--border3);margin-bottom:2rem}
+.workout-grid{display:grid;grid-template-columns:1fr 300px;gap:1.5rem}
+@media(max-width:860px){.workout-grid{grid-template-columns:1fr}}
+
+.w-card{background:var(--bg2);border:1px solid var(--border3);border-radius:var(--rl);padding:1.5rem;margin-bottom:1.25rem;transition:border-color 0.2s}
+.w-card:hover{border-color:rgba(57,255,106,0.2)}
+.w-card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem}
+.w-name{font-size:1.05rem;font-weight:600}
+.w-date{font-size:0.75rem;color:var(--muted);font-family:var(--mono);margin-top:0.15rem}
+.w-badge{display:inline-block;padding:0.22rem 0.65rem;border-radius:100px;font-size:0.7rem;font-family:var(--mono);font-weight:500;text-transform:uppercase;letter-spacing:0.06em}
+.wb-strength{background:rgba(57,255,106,0.1);color:var(--neon);border:1px solid var(--border)}
+.wb-cardio{background:rgba(0,229,255,0.1);color:var(--neon2);border:1px solid var(--border2)}
+.wb-circuit{background:rgba(255,215,0,0.1);color:var(--neon4);border:1px solid rgba(255,215,0,0.25)}
+.wb-flexibility{background:rgba(255,107,53,0.1);color:var(--neon3);border:1px solid rgba(255,107,53,0.25)}
+
+.w-stats{display:flex;gap:1.5rem;margin-bottom:1rem}
+.w-stat{display:flex;flex-direction:column}
+.w-stat-num{font-size:1.2rem;font-weight:700;font-family:var(--mono)}
+.w-stat-lbl{font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em}
+.w-exercises{display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:1rem}
+.w-ex{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:7px;padding:0.25rem 0.65rem;font-size:0.75rem;color:var(--muted)}
+.w-notes{font-size:0.82rem;color:var(--muted);font-style:italic;margin-top:0.5rem;padding:0.6rem 0.8rem;background:rgba(255,255,255,0.02);border-radius:8px}
+.w-actions{display:flex;justify-content:flex-end;margin-top:0.75rem}
+
+/* Sticky sidebar */
+.side-sticky{position:sticky;top:6.5rem;display:flex;flex-direction:column;gap:1.25rem}
+.side-stat{text-align:center;padding:1rem}
+.side-stat-num{font-size:2rem;font-weight:700;font-family:var(--mono);color:var(--neon);line-height:1}
+.side-stat-lbl{font-size:0.75rem;color:var(--muted);margin-top:0.3rem;text-transform:uppercase;letter-spacing:0.04em}
+
+/* Exercise builder */
+.ex-builder{display:flex;flex-direction:column;gap:0.5rem;max-height:220px;overflow-y:auto;margin-bottom:0.75rem}
+.ex-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:0.5rem;align-items:center}
+.ex-input{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--text);padding:0.4rem 0.65rem;font-size:0.82rem;font-family:var(--font);outline:none;width:100%}
+.ex-input:focus{border-color:var(--neon)}
+.ex-input::placeholder{color:var(--muted2)}
+.ex-label{font-size:0.65rem;color:var(--muted);text-align:center;font-family:var(--mono)}
+.remove-ex{background:none;border:none;color:var(--muted2);cursor:pointer;padding:0.2rem;font-size:1rem;transition:color 0.2s}
+.remove-ex:hover{color:#ff6b6b}
+
+.type-tabs{display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem}
+.type-tab{background:var(--bg3);border:1px solid var(--border3);border-radius:8px;color:var(--muted);padding:0.4rem 0.85rem;font-size:0.78rem;cursor:pointer;font-family:var(--font);transition:all 0.2s}
+.type-tab.active{border-color:var(--neon);color:var(--neon);background:rgba(57,255,106,0.08)}
+
+.fuel-card{background:rgba(57,255,106,0.05);border:1px solid var(--border);border-radius:var(--rl);padding:1.25rem}
+.fuel-score{font-size:2rem;font-weight:700;font-family:var(--mono);color:var(--neon)}
+</style>
+</head>
+<body>
+<script src="/js/api.js"></script>
+<script>if(!requireAuth()) throw '';</script>
+
+<div class="page-wrap">
+<div class="container">
+  <div class="page-header">
+    <span class="section-label">// workout lab</span>
+    <h2>Train. Track. <em>Recover.</em></h2>
+    <p class="section-sub">Log every session. See how training and nutrition sync for maximum performance.</p>
+  </div>
+
+  <div style="display:flex;justify-content:flex-end;margin-bottom:1.5rem">
+    <button class="btn btn-primary" onclick="openModal()">+ Log Workout</button>
+  </div>
+
+  <div class="workout-grid">
+    <!-- WORKOUTS LIST -->
+    <div id="workouts-list"><div style="color:var(--muted);font-size:0.9rem">Loading workouts…</div></div>
+
+    <!-- SIDEBAR -->
+    <div class="side-sticky">
+      <!-- Weekly summary -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:1rem">THIS WEEK</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+          <div class="side-stat"><div class="side-stat-num" id="wk-sessions">–</div><div class="side-stat-lbl">Sessions</div></div>
+          <div class="side-stat"><div class="side-stat-num" id="wk-cal" style="color:var(--neon3)">–</div><div class="side-stat-lbl">Cal Burned</div></div>
+          <div class="side-stat"><div class="side-stat-num" id="wk-mins">–</div><div class="side-stat-lbl">Minutes</div></div>
+          <div class="side-stat"><div class="side-stat-num" id="wk-avg">–</div><div class="side-stat-lbl">Avg/session</div></div>
+        </div>
+      </div>
+
+      <!-- Fuel Efficiency -->
+      <div class="fuel-card">
+        <div class="card-title" style="margin-bottom:0.5rem">FUEL EFFICIENCY</div>
+        <div class="fuel-score" id="fuel-score">–%</div>
+        <div style="font-size:0.82rem;color:var(--muted);margin-top:0.35rem" id="fuel-label">Log today's meals + workout to calculate</div>
+        <div class="progress-bar" style="margin-top:0.75rem"><div class="progress-fill fill-green" id="fuel-bar" style="width:0%"></div></div>
+      </div>
+
+      <!-- Weekly activity chart -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:0.75rem">WEEKLY ACTIVITY</div>
+        <canvas id="activity-chart" width="260" height="120" style="width:100%;max-width:260px;display:block;margin:0 auto"></canvas>
+      </div>
+
+      <!-- Type breakdown -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:1rem">SESSION TYPES</div>
+        <div id="type-breakdown" style="display:flex;flex-direction:column;gap:0.65rem"></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- LOG WORKOUT MODAL -->
+<div class="modal-overlay" id="workout-modal">
+  <div class="modal" style="max-width:560px;max-height:90vh;overflow-y:auto">
+    <div class="modal-header"><h3>Log Workout</h3><button class="modal-close" onclick="closeModal()">×</button></div>
+
+    <div style="display:flex;flex-direction:column;gap:0.9rem">
+      <div class="form-group"><label>Workout Name</label><input type="text" id="w-name" placeholder="e.g. Upper Body Strength"></div>
+
+      <div>
+        <div class="form-group" style="margin-bottom:0.5rem"><label>Type</label></div>
+        <div class="type-tabs" id="type-tabs">
+          <button class="type-tab active" data-type="strength">💪 Strength</button>
+          <button class="type-tab" data-type="cardio">🏃 Cardio</button>
+          <button class="type-tab" data-type="circuit">⚡ Circuit</button>
+          <button class="type-tab" data-type="flexibility">🧘 Flexibility</button>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="form-group"><label>Duration (min)</label><input type="number" id="w-dur" placeholder="55" min="1"></div>
+        <div class="form-group"><label>Calories Burned</label><input type="number" id="w-cal" placeholder="380" min="0"></div>
+      </div>
+
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
+          <label style="font-size:0.73rem;font-family:var(--mono);color:var(--muted);letter-spacing:0.06em;text-transform:uppercase">Exercises</label>
+          <button class="btn btn-outline btn-sm" onclick="addExercise()">+ Add</button>
+        </div>
+        <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 24px;gap:0.4rem;margin-bottom:0.3rem">
+          <div class="ex-label">Exercise</div><div class="ex-label">Sets</div><div class="ex-label">Reps</div><div class="ex-label">kg</div><div></div>
+        </div>
+        <div class="ex-builder" id="ex-builder"></div>
+      </div>
+
+      <div class="form-group"><label>Notes</label><textarea id="w-notes" placeholder="How did it feel? Any PRs?"></textarea></div>
+      <div class="form-group"><label>Date</label><input type="date" id="w-date"></div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-sm" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="submitWorkout()">Save Workout</button>
+    </div>
+  </div>
+</div>
+
+<script>
+buildNav('workout');
+
+let workouts = [];
+let selectedType = 'strength';
+let exercises = [];
+
+const TYPE_COLORS = {strength:'var(--neon)',cardio:'var(--neon2)',circuit:'var(--neon4)',flexibility:'var(--neon3)'};
+const TYPE_BADGES = {strength:'wb-strength',cardio:'wb-cardio',circuit:'wb-circuit',flexibility:'wb-flexibility'};
+
+async function load(){
+  try{
+    const res = await API.getWorkouts();
+    workouts = res.workouts;
+    renderWorkouts();
+    renderSidebar();
+  }catch(e){ toast(e.message,'error'); }
+}
+
+function renderWorkouts(){
+  if(!workouts.length){
+    document.getElementById('workouts-list').innerHTML = `
+      <div class="empty"><div class="empty-icon">🏋️</div><div class="empty-title">No workouts yet</div><div class="empty-sub">Log your first session to get started</div></div>`;
+    return;
+  }
+  document.getElementById('workouts-list').innerHTML = workouts.map(w=>`
+    <div class="w-card">
+      <div class="w-card-header">
+        <div>
+          <div class="w-name">${w.name}</div>
+          <div class="w-date">${formatDate(w.date)}</div>
+        </div>
+        <span class="w-badge ${TYPE_BADGES[w.type]||'wb-strength'}">${w.type}</span>
+      </div>
+      <div class="w-stats">
+        <div class="w-stat"><div class="w-stat-num" style="color:var(--neon2)">${w.duration}</div><div class="w-stat-lbl">minutes</div></div>
+        <div class="w-stat"><div class="w-stat-num" style="color:var(--neon3)">${w.calories_burned}</div><div class="w-stat-lbl">kcal burned</div></div>
+        <div class="w-stat"><div class="w-stat-num" style="color:var(--neon)">${w.exercises.length}</div><div class="w-stat-lbl">exercises</div></div>
+      </div>
+      ${w.exercises.length ? `<div class="w-exercises">${w.exercises.map(e=>`<span class="w-ex">${e.name}${e.weight?` ${e.weight}kg`:''} ${e.sets}×${e.reps}</span>`).join('')}</div>` : ''}
+      ${w.notes ? `<div class="w-notes">"${w.notes}"</div>` : ''}
+      <div class="w-actions">
+        <button class="btn btn-danger btn-sm" onclick="deleteWorkout('${w.id}')">Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+function formatDate(d){
+  const today=new Date().toISOString().split('T')[0];
+  const yest=new Date(); yest.setDate(yest.getDate()-1);
+  if(d===today) return 'Today';
+  if(d===yest.toISOString().split('T')[0]) return 'Yesterday';
+  return new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+}
+
+function renderSidebar(){
+  const now=new Date(); const weekStart=new Date(now); weekStart.setDate(now.getDate()-now.getDay());
+  const thisWeek=workouts.filter(w=>new Date(w.date+'T12:00:00')>=weekStart);
+  const totalCal=thisWeek.reduce((a,w)=>a+w.calories_burned,0);
+  const totalMins=thisWeek.reduce((a,w)=>a+w.duration,0);
+  document.getElementById('wk-sessions').textContent=thisWeek.length;
+  document.getElementById('wk-cal').textContent=totalCal;
+  document.getElementById('wk-mins').textContent=totalMins;
+  document.getElementById('wk-avg').textContent=thisWeek.length?Math.round(totalMins/thisWeek.length)+'m':'–';
+
+  // Fuel efficiency: rough estimate based on today's workout cal burned vs logged food
+  const todayW=workouts.find(w=>w.date===new Date().toISOString().split('T')[0]);
+  if(todayW){
+    const eff=Math.min(100,Math.round((todayW.calories_burned/(todayW.calories_burned+300))*100+70));
+    document.getElementById('fuel-score').textContent=eff+'%';
+    document.getElementById('fuel-label').textContent=eff>=85?'Well fueled! Great nutrition sync.':eff>=65?'Good fuel. Consider more carbs pre-workout.':'Low fuel efficiency — eat more around training.';
+    document.getElementById('fuel-bar').style.width=eff+'%';
+  }
+
+  // Weekly activity bars
+  const canvas=document.getElementById('activity-chart');
+  const days=['S','M','T','W','T','F','S'];
+  const vals=days.map((_,i)=>{
+    const d=new Date(); d.setDate(d.getDate()-d.getDay()+i);
+    const ds=d.toISOString().split('T')[0];
+    const w=workouts.find(w=>w.date===ds);
+    return w?w.duration:0;
+  });
+  drawBarChart(canvas,days,vals);
+
+  // Type breakdown
+  const types={};
+  workouts.forEach(w=>{ types[w.type]=(types[w.type]||0)+1; });
+  document.getElementById('type-breakdown').innerHTML = Object.entries(types).map(([t,c])=>`
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:0.83rem;text-transform:capitalize">${t}</span>
+      <div style="display:flex;align-items:center;gap:0.75rem;flex:1;margin-left:1rem">
+        <div class="progress-bar" style="flex:1"><div class="progress-fill fill-green" style="width:${Math.round(c/workouts.length*100)}%"></div></div>
+        <span style="font-size:0.75rem;font-family:var(--mono);color:var(--muted);width:20px;text-align:right">${c}</span>
+      </div>
+    </div>`).join('');
+}
+
+function drawBarChart(canvas,labels,data){
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  const pad={t:10,r:8,b:24,l:8};
+  const cW=W-pad.l-pad.r,cH=H-pad.t-pad.b;
+  const max=Math.max(...data,1);
+  const bW=Math.floor(cW/data.length)-4;
+  ctx.clearRect(0,0,W,H);
+  const today=new Date().getDay();
+  data.forEach((v,i)=>{
+    const x=pad.l+i*(cW/data.length)+2;
+    const bH=Math.round((v/max)*cH);
+    const y=pad.t+cH-bH;
+    ctx.fillStyle=i===today?'#39FF6A':'rgba(57,255,106,0.25)';
+    ctx.beginPath();
+    if(typeof ctx.roundRect==='function') ctx.roundRect(x,y,bW,bH,4);
+    else ctx.rect(x,y,bW,bH);
+    ctx.fill();
+    ctx.fillStyle=i===today?'#39FF6A':'#6B8F72';
+    ctx.font='10px DM Mono,monospace';ctx.textAlign='center';
+    ctx.fillText(labels[i],x+bW/2,H-6);
+    if(v>0){ ctx.fillStyle='#E8F5EA';ctx.font='9px DM Mono,monospace';ctx.fillText(v+'m',x+bW/2,y-3); }
+  });
+}
+
+function openModal(){
+  exercises=[];
+  document.getElementById('w-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('workout-modal').classList.add('open');
+  renderExercises();
+}
+function closeModal(){ document.getElementById('workout-modal').classList.remove('open'); }
+document.getElementById('workout-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
+
+// Type tab selection
+document.getElementById('type-tabs').addEventListener('click',e=>{
+  const btn=e.target.closest('.type-tab');
+  if(!btn) return;
+  document.querySelectorAll('.type-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  selectedType=btn.dataset.type;
+});
+
+function addExercise(){
+  exercises.push({name:'',sets:3,reps:10,weight:0});
+  renderExercises();
+}
+function removeExercise(i){ exercises.splice(i,1); renderExercises(); }
+function updateExercise(i,field,val){ exercises[i][field]=val; }
+
+function renderExercises(){
+  document.getElementById('ex-builder').innerHTML = exercises.length
+    ? exercises.map((e,i)=>`
+        <div class="ex-row">
+          <input class="ex-input" placeholder="Exercise name" value="${e.name}" oninput="exercises[${i}].name=this.value">
+          <input class="ex-input" type="number" placeholder="3" value="${e.sets}" min="1" oninput="exercises[${i}].sets=+this.value">
+          <input class="ex-input" type="number" placeholder="10" value="${e.reps}" min="1" oninput="exercises[${i}].reps=+this.value">
+          <input class="ex-input" type="number" placeholder="0" value="${e.weight}" min="0" oninput="exercises[${i}].weight=+this.value">
+          <button class="remove-ex" onclick="removeExercise(${i})">×</button>
+        </div>`).join('')
+    : `<div style="font-size:0.82rem;color:var(--muted2);padding:0.5rem">Click "+ Add" to add exercises</div>`;
+}
+
+async function submitWorkout(){
+  const name=document.getElementById('w-name').value.trim();
+  if(!name){toast('Please enter a workout name','warning');return;}
+  try{
+    await API.addWorkout({
+      name,
+      type:selectedType,
+      duration:+document.getElementById('w-dur').value||0,
+      calories_burned:+document.getElementById('w-cal').value||0,
+      exercises:exercises.filter(e=>e.name.trim()),
+      notes:document.getElementById('w-notes').value,
+      date:document.getElementById('w-date').value,
+    });
+    closeModal();
+    toast('🏋️ Workout logged!');
+    ['w-name','w-dur','w-cal','w-notes'].forEach(id=>document.getElementById(id).value='');
+    exercises=[];
+    await load();
+  }catch(e){ toast(e.message,'error'); }
+}
+
+async function deleteWorkout(id){
+  if(!confirm('Delete this workout?')) return;
+  try{ await API.deleteWorkout(id); toast('Workout deleted'); await load(); }
+  catch(e){ toast(e.message,'error'); }
+}
+
+window.addEventListener('load', load);
+</script>
+</body>
+</html>

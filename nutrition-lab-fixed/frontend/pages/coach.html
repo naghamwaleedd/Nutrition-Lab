@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>AI Coach — Nutrition Lab</title>
+<link rel="stylesheet" href="/css/style.css">
+<style>
+.page-wrap{padding-top:5.5rem;padding-bottom:2rem}
+.coach-layout{display:grid;grid-template-columns:1fr 320px;gap:1.5rem;height:calc(100vh - 9rem)}
+@media(max-width:860px){.coach-layout{grid-template-columns:1fr;height:auto}}
+
+/* Chat */
+.chat-card{background:var(--bg2);border:1px solid var(--border3);border-radius:var(--rl);display:flex;flex-direction:column;height:100%;min-height:500px}
+.chat-header{padding:1.25rem 1.5rem;border-bottom:1px solid var(--border3);display:flex;align-items:center;gap:1rem;flex-shrink:0}
+.coach-avatar{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,rgba(57,255,106,0.15),rgba(0,229,255,0.15));border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.4rem}
+.coach-status{display:flex;align-items:center;gap:0.4rem;font-size:0.72rem;color:var(--neon);font-family:var(--mono)}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--neon);animation:blink 1.5s infinite}
+
+.chat-msgs{flex:1;overflow-y:auto;padding:1.25rem;display:flex;flex-direction:column;gap:0.9rem;scroll-behavior:smooth}
+.msg{display:flex;gap:0.75rem;max-width:85%;animation:fadeUp 0.25s ease}
+.msg.user{flex-direction:row-reverse;align-self:flex-end}
+.msg-bubble{padding:0.75rem 1rem;border-radius:16px;font-size:0.87rem;line-height:1.6;white-space:pre-wrap}
+.msg.ai .msg-bubble{background:rgba(57,255,106,0.06);border:1px solid rgba(57,255,106,0.15);border-bottom-left-radius:4px}
+.msg.user .msg-bubble{background:var(--neon);color:#080C0A;border-bottom-right-radius:4px;font-weight:500}
+.msg-avatar{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.85rem}
+.msg.ai .msg-avatar{background:rgba(57,255,106,0.12);border:1px solid var(--border)}
+.msg.user .msg-avatar{background:rgba(57,255,106,0.2)}
+.msg-time{font-size:0.65rem;color:var(--muted);margin-top:0.3rem;text-align:right}
+.msg.ai .msg-time{text-align:left}
+
+.typing{display:flex;gap:4px;padding:0.75rem 1rem;background:rgba(57,255,106,0.06);border:1px solid rgba(57,255,106,0.15);border-radius:16px;border-bottom-left-radius:4px;width:fit-content}
+.typing span{width:7px;height:7px;border-radius:50%;background:var(--neon);animation:dot 1.4s infinite}
+.typing span:nth-child(2){animation-delay:0.2s}
+.typing span:nth-child(3){animation-delay:0.4s}
+@keyframes dot{0%,80%,100%{opacity:0.3;transform:scale(0.85)}40%{opacity:1;transform:scale(1)}}
+
+.chat-input-wrap{padding:1rem 1.25rem;border-top:1px solid var(--border3);flex-shrink:0}
+.chat-input-row{display:flex;gap:0.75rem;align-items:flex-end}
+.chat-textarea{flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:var(--text);padding:0.65rem 1rem;font-size:0.9rem;font-family:var(--font);outline:none;resize:none;min-height:44px;max-height:120px;transition:border-color 0.2s;line-height:1.5}
+.chat-textarea:focus{border-color:var(--neon)}
+.send-btn{background:var(--neon);color:#080C0A;border:none;border-radius:10px;width:44px;height:44px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;transition:all 0.2s}
+.send-btn:hover{opacity:0.88;transform:scale(1.05)}
+.send-btn:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+
+.suggestions{display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:0.75rem}
+.sug-btn{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:100px;color:var(--muted);font-size:0.75rem;padding:0.3rem 0.8rem;cursor:pointer;font-family:var(--font);transition:all 0.2s;white-space:nowrap}
+.sug-btn:hover{border-color:var(--neon);color:var(--neon);background:rgba(57,255,106,0.05)}
+
+/* Sidebar */
+.insights-sidebar{display:flex;flex-direction:column;gap:1.25rem;overflow-y:auto}
+.insight-card{background:var(--bg2);border:1px solid var(--border3);border-radius:var(--rl);padding:1.35rem;transition:border-color 0.2s}
+.insight-card:hover{border-color:rgba(57,255,106,0.2)}
+.ins-icon{font-size:1.4rem;margin-bottom:0.5rem}
+.ins-type{font-family:var(--mono);font-size:0.67rem;color:var(--neon);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.25rem;display:block}
+.ins-type.warn{color:var(--neon3)}
+.ins-title{font-size:0.9rem;font-weight:600;margin-bottom:0.35rem}
+.ins-msg{font-size:0.8rem;color:var(--muted);line-height:1.55}
+</style>
+</head>
+<body>
+<script src="/js/api.js"></script>
+<script>if(!requireAuth()) throw '';</script>
+
+<div class="page-wrap">
+<div class="container">
+  <div style="padding:1.5rem 0 1.25rem;border-bottom:1px solid var(--border3);margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:flex-end">
+    <div><span class="section-label">// ai coach</span><h2>Your Personal <em>Coach</em></h2></div>
+    <button class="btn btn-outline btn-sm" onclick="clearChat()">Clear Chat</button>
+  </div>
+
+  <div class="coach-layout">
+    <!-- CHAT -->
+    <div class="chat-card">
+      <div class="chat-header">
+        <div class="coach-avatar">🤖</div>
+        <div>
+          <div style="font-size:1rem;font-weight:600">Nutrition Lab AI</div>
+          <div class="coach-status"><span class="status-dot"></span>Online · Ready to help</div>
+        </div>
+      </div>
+
+      <div class="chat-msgs" id="chat-msgs"></div>
+
+      <div class="chat-input-wrap">
+        <div class="suggestions" id="suggestions"></div>
+        <div class="chat-input-row">
+          <textarea class="chat-textarea" id="chat-input" placeholder="Ask about calories, protein, meal ideas, plateaus…" rows="1" onkeydown="handleKey(event)"></textarea>
+          <button class="send-btn" id="send-btn" onclick="sendMessage()">➤</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIDEBAR INSIGHTS -->
+    <div class="insights-sidebar">
+      <div class="card">
+        <div class="card-title" style="margin-bottom:1rem">LIVE INSIGHTS</div>
+        <div id="insights-list"><div style="color:var(--muted);font-size:0.85rem">Loading…</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:0.85rem">QUICK TOPICS</div>
+        <div style="display:flex;flex-direction:column;gap:0.5rem" id="quick-topics"></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+buildNav('coach');
+
+const SUGGESTIONS = [
+  'What should I eat today?','How much protein do I need?',
+  'Why am I in a plateau?','Best pre-workout meal?',
+  'How is my progress?','What supplements help?',
+  'Analyze my score today','How many calories left?'
+];
+
+const QUICK_TOPICS = [
+  {icon:'🥩',label:'Protein goals',msg:'How much protein do I need daily?'},
+  {icon:'📉',label:'Break a plateau',msg:'I haven\'t lost weight in 2 weeks. What should I do?'},
+  {icon:'🏋️',label:'Workout nutrition',msg:'What should I eat before and after my workout?'},
+  {icon:'💧',label:'Hydration tips',msg:'How much water should I drink?'},
+  {icon:'📊',label:'Weekly summary',msg:'Give me a summary of my progress this week'},
+  {icon:'🍽️',label:'Meal planning',msg:'Suggest a meal plan for my goal'},
+];
+
+let messages = [];
+let isTyping = false;
+
+function formatTime(){
+  return new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+}
+
+function appendMsg(role, text){
+  const msgs = document.getElementById('chat-msgs');
+  const isAI = role === 'ai';
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.innerHTML = `
+    <div class="msg-avatar">${isAI?'🤖':'👤'}</div>
+    <div>
+      <div class="msg-bubble">${text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')}</div>
+      <div class="msg-time">${formatTime()}</div>
+    </div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function showTyping(){
+  const msgs = document.getElementById('chat-msgs');
+  const div = document.createElement('div');
+  div.className = 'msg ai'; div.id = 'typing-indicator';
+  div.innerHTML = `<div class="msg-avatar">🤖</div><div class="typing"><span></span><span></span><span></span></div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+function hideTyping(){ document.getElementById('typing-indicator')?.remove(); }
+
+function renderSuggestions(){
+  document.getElementById('suggestions').innerHTML = SUGGESTIONS.slice(0,4).map(s=>
+    `<button class="sug-btn" onclick="useSuggestion('${s}')">${s}</button>`
+  ).join('');
+}
+
+function useSuggestion(text){
+  document.getElementById('chat-input').value = text;
+  sendMessage();
+}
+
+function handleKey(e){
+  if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); }
+}
+
+async function sendMessage(){
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if(!text || isTyping) return;
+
+  input.value = '';
+  isTyping = true;
+  document.getElementById('send-btn').disabled = true;
+  document.getElementById('suggestions').innerHTML = '';
+
+  appendMsg('user', text);
+  messages.push({role:'user', text});
+
+  showTyping();
+  try{
+    // Small delay for realism
+    await new Promise(r=>setTimeout(r,600+Math.random()*800));
+    const res = await API.chat(text);
+    hideTyping();
+    appendMsg('ai', res.reply);
+    messages.push({role:'ai', text:res.reply});
+  }catch(e){
+    hideTyping();
+    appendMsg('ai','Sorry, I had trouble connecting. Please try again.');
+  }
+
+  isTyping = false;
+  document.getElementById('send-btn').disabled = false;
+  renderSuggestions();
+}
+
+function clearChat(){
+  messages = [];
+  document.getElementById('chat-msgs').innerHTML = '';
+  initChat();
+}
+
+async function loadInsights(){
+  try{
+    const res = await API.getInsights();
+    document.getElementById('insights-list').innerHTML = res.insights.map(ins=>`
+      <div class="insight-card" style="margin-bottom:0.75rem;padding:1rem">
+        <div class="ins-icon">${ins.icon}</div>
+        <span class="ins-type ${ins.type==='WARNING'?'warn':''}">${ins.type}</span>
+        <div class="ins-title">${ins.title}</div>
+        <div class="ins-msg">${ins.message}</div>
+      </div>`).join('');
+  }catch(e){ console.error(e); }
+}
+
+function renderQuickTopics(){
+  document.getElementById('quick-topics').innerHTML = QUICK_TOPICS.map(t=>`
+    <button onclick="useSuggestion('${t.msg}')" style="display:flex;align-items:center;gap:0.7rem;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:0.65rem 0.85rem;cursor:pointer;color:var(--text);font-family:var(--font);font-size:0.83rem;text-align:left;transition:all 0.2s;width:100%"
+      onmouseover="this.style.borderColor='rgba(57,255,106,0.3)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.07)'">
+      <span>${t.icon}</span><span>${t.label}</span>
+    </button>`).join('');
+}
+
+function initChat(){
+  const user = Auth.getUser();
+  const name = user?.name?.split(' ')[0] || 'there';
+  appendMsg('ai', `Hello ${name}! 👋 I'm your Nutrition Lab AI Coach.\n\nI have access to your complete nutrition profile, daily logs, and progress data. Ask me anything about:\n• Your calories and macros\n• Protein targets and meal ideas\n• Breaking through plateaus\n• Workout nutrition timing\n• Your weekly progress\n\nWhat would you like to know?`);
+}
+
+window.addEventListener('load', async ()=>{
+  renderSuggestions();
+  renderQuickTopics();
+  initChat();
+  await loadInsights();
+});
+</script>
+</body>
+</html>

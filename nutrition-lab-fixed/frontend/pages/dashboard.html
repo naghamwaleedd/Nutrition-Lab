@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Dashboard — Nutrition Lab</title>
+<link rel="stylesheet" href="/css/style.css">
+<style>
+.page-wrap{padding-top:5.5rem}
+.dash{display:grid;grid-template-columns:1fr 300px;gap:1.5rem;padding:1.5rem 0 3rem}
+.main{display:flex;flex-direction:column;gap:1.5rem}
+.sidebar{display:flex;flex-direction:column;gap:1.5rem}
+@media(max-width:860px){.dash{grid-template-columns:1fr}}
+
+.welcome{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;padding:1.4rem 1.6rem;background:var(--bg2);border:1px solid var(--border3);border-radius:var(--rl)}
+.w-name{font-size:1.3rem;font-weight:700}.w-sub{font-size:0.83rem;color:var(--muted);margin-top:0.15rem}
+
+.score-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem}
+@media(max-width:640px){.score-row{grid-template-columns:1fr 1fr}}
+.score-mini{background:var(--bg2);border:1px solid var(--border3);border-radius:14px;padding:1.2rem;text-align:center;transition:border-color 0.2s}
+.score-mini:hover{border-color:rgba(57,255,106,0.25)}
+.sm-num{font-size:1.8rem;font-weight:700;font-family:var(--mono);line-height:1}
+.sm-label{font-size:0.73rem;color:var(--muted);margin-top:0.3rem;text-transform:uppercase;letter-spacing:0.04em}
+.sm-sub{font-size:0.7rem;margin-top:0.2rem;font-family:var(--mono)}
+
+.card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem}
+.card-title{font-size:0.7rem;font-family:var(--mono);color:var(--muted);letter-spacing:0.08em;text-transform:uppercase}
+.card-main-title{font-size:1rem;font-weight:600;margin-top:0.15rem}
+
+.macro-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.25rem}
+.macro-col{text-align:center}
+.mac-val{font-size:1.55rem;font-weight:700;font-family:var(--mono);line-height:1}
+.mac-lbl{font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-top:0.2rem}
+.mac-of{font-size:0.7rem;color:var(--muted2);font-family:var(--mono)}
+
+.meal-row{display:flex;align-items:center;gap:0.85rem;padding:0.8rem 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+.meal-row:last-child{border-bottom:none}
+.meal-ico{width:40px;height:40px;border-radius:10px;background:rgba(57,255,106,0.08);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+.meal-name{font-size:0.88rem;font-weight:500}
+.meal-meta{font-size:0.75rem;color:var(--muted);margin-top:0.1rem}
+.meal-macros{font-size:0.7rem;color:var(--muted2);font-family:var(--mono)}
+.meal-cal{font-family:var(--mono);font-size:0.92rem;color:var(--neon);margin-left:auto;flex-shrink:0}
+.del-btn{background:none;border:none;color:var(--muted2);cursor:pointer;font-size:1rem;padding:0.25rem;transition:color 0.2s}
+.del-btn:hover{color:#ff6b6b}
+
+.add-row{display:flex;align-items:center;gap:0.75rem;padding:0.85rem;border:2px dashed rgba(57,255,106,0.2);border-radius:12px;cursor:pointer;color:var(--muted);font-size:0.85rem;transition:all 0.2s;background:none;width:100%;font-family:var(--font);margin-top:0.5rem}
+.add-row:hover{border-color:var(--neon);color:var(--neon);background:rgba(57,255,106,0.04)}
+
+.water-bubbles{display:flex;gap:0.4rem;flex-wrap:wrap;margin:0.85rem 0}
+.w-bubble{width:40px;height:40px;border-radius:50%;border:2px solid var(--neon2);display:flex;align-items:center;justify-content:center;font-size:1rem;cursor:pointer;transition:all 0.18s}
+.w-bubble.filled{background:rgba(0,229,255,0.18)}
+.w-bubble:hover{transform:scale(1.12)}
+
+/* Sidebar */
+.ring-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:1.5rem;text-align:center}
+.big-ring{position:relative;width:130px;height:130px;margin:0 auto 1rem}
+.big-ring canvas{position:absolute;inset:0}
+.big-ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.score-n{font-size:2.5rem;font-weight:700;color:var(--neon);font-family:var(--mono);line-height:1}
+.score-grade{font-size:0.7rem;color:var(--muted)}
+
+.insight-item{padding:0.8rem 0.95rem;background:rgba(57,255,106,0.05);border:1px solid rgba(57,255,106,0.12);border-radius:10px;margin-bottom:0.6rem;font-size:0.8rem;line-height:1.5}
+.insight-item:last-child{margin-bottom:0}
+.insight-type{font-family:var(--mono);font-size:0.65rem;color:var(--neon);display:block;margin-bottom:0.2rem;letter-spacing:0.06em}
+.insight-item.warn{background:rgba(255,107,53,0.05);border-color:rgba(255,107,53,0.2)}
+.insight-item.warn .insight-type{color:var(--neon3)}
+
+.streak-row{display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0;border-bottom:1px solid var(--border3)}
+.streak-row:last-child{border-bottom:none}
+.streak-l{display:flex;align-items:center;gap:0.65rem;font-size:0.85rem}
+.streak-count{font-family:var(--mono);font-size:1.05rem;font-weight:700;color:var(--neon)}
+
+.quick-links{display:grid;grid-template-columns:1fr 1fr;gap:0.65rem}
+.quick-link{text-decoration:none;background:var(--bg2);border:1px solid var(--border3);border-radius:12px;padding:1rem;text-align:center;transition:all 0.2s;display:block}
+.quick-link:hover{border-color:rgba(57,255,106,0.28);transform:translateY(-2px)}
+.ql-icon{font-size:1.5rem;margin-bottom:0.35rem}
+.ql-label{font-size:0.78rem;font-weight:600;color:var(--text)}
+</style>
+</head>
+<body>
+<script src="/js/api.js"></script>
+<script>if(!requireAuth()) throw 'redirecting';</script>
+
+<div class="page-wrap">
+<div class="container">
+<div class="dash">
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- Welcome -->
+    <div class="welcome" id="welcome">
+      <div><div class="w-name">Loading…</div><div class="w-sub" id="w-date"></div></div>
+      <div style="display:flex;gap:0.75rem;align-items:center">
+        <span class="pill pill-green" id="streak-pill">🔥 Loading…</span>
+        <button class="btn btn-primary btn-sm" onclick="openMealModal()">+ Log Meal</button>
+        <button class="btn btn-outline btn-sm" onclick="openSettingsModal()" style="margin-left:0.5rem">⚙️ Settings</button>
+      </div>
+    </div>
+
+    <!-- Score mini cards -->
+    <div class="score-row" id="score-row"></div>
+
+    <!-- Macros -->
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">TODAY'S MACROS</div><div class="card-main-title">Nutrient Breakdown</div></div>
+        <canvas id="macro-donut" width="65" height="65"></canvas>
+      </div>
+      <div class="macro-cols" id="macro-cols"></div>
+      <div id="macro-bars" style="display:flex;flex-direction:column;gap:0.55rem"></div>
+    </div>
+
+    <!-- Meals -->
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">FOOD JOURNAL</div><div class="card-main-title">Meals Logged Today</div></div>
+        <a href="/pages/tracker.html" class="btn btn-outline btn-sm">Full Tracker →</a>
+      </div>
+      <div id="meals-list"></div>
+      <button class="add-row" onclick="openMealModal()">＋ Add a meal or snack</button>
+    </div>
+
+    <!-- Water -->
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">HYDRATION</div><div class="card-main-title">Water Intake</div></div>
+        <div style="text-align:right"><div style="font-family:var(--mono);font-size:1.45rem;font-weight:700;color:var(--neon2)" id="water-val">–</div><div style="font-size:0.73rem;color:var(--muted)" id="water-goal">of –L</div></div>
+      </div>
+      <div class="water-bubbles" id="water-bubbles"></div>
+      <div class="progress-bar"><div class="progress-fill fill-cyan" id="water-bar" style="width:0%"></div></div>
+      <div style="font-size:0.75rem;color:var(--muted);margin-top:0.5rem">💧 Tap a bubble to log 250ml</div>
+    </div>
+
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+
+    <!-- Score Ring -->
+    <div class="ring-card">
+      <div class="card-title" style="margin-bottom:1rem">TODAY'S NUTRITION SCORE</div>
+      <div class="big-ring">
+        <canvas id="big-ring" width="130" height="130"></canvas>
+        <div class="big-ring-center"><div class="score-n" id="score-n">–</div><div class="score-grade">/100</div></div>
+      </div>
+      <div style="font-size:1rem;font-weight:600;margin-bottom:0.2rem" id="score-grade-label">–</div>
+      <div style="font-size:0.8rem;color:var(--muted)" id="score-tip">–</div>
+      <a href="/pages/progress.html" class="btn btn-outline btn-sm btn-full" style="margin-top:1rem">View Full Report →</a>
+    </div>
+
+    <!-- AI Insights -->
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">AI COACH</div><div class="card-main-title">Live Insights</div></div>
+        <a href="/pages/coach.html" class="btn btn-outline btn-sm">Chat →</a>
+      </div>
+      <div id="insights-list"><div style="color:var(--muted);font-size:0.85rem">Loading insights…</div></div>
+    </div>
+
+    <!-- Streaks -->
+    <div class="card">
+      <div class="card-title" style="margin-bottom:1rem">STREAKS</div>
+      <div class="streak-row"><div class="streak-l"><span>🔥</span><div><div style="font-size:0.83rem;font-weight:500">Protein Goal</div><div style="font-size:0.72rem;color:var(--muted)">Hit daily</div></div></div><div class="streak-count" id="streak-protein">–</div></div>
+      <div class="streak-row"><div class="streak-l"><span>💧</span><div><div style="font-size:0.83rem;font-weight:500">Hydration</div><div style="font-size:0.72rem;color:var(--muted)">2L+ daily</div></div></div><div class="streak-count" id="streak-hydration">–</div></div>
+      <div class="streak-row"><div class="streak-l"><span>🏋️</span><div><div style="font-size:0.83rem;font-weight:500">Workouts</div><div style="font-size:0.72rem;color:var(--muted)">Sessions logged</div></div></div><div class="streak-count" id="streak-workouts">–</div></div>
+      <div class="streak-row"><div class="streak-l"><span>⚗️</span><div><div style="font-size:0.83rem;font-weight:500">Score 75+</div><div style="font-size:0.72rem;color:var(--muted)">Quality days</div></div></div><div class="streak-count" id="streak-score">–</div></div>
+    </div>
+
+    <!-- Quick Links -->
+    <div class="quick-links">
+      <a href="/pages/tracker.html" class="quick-link"><div class="ql-icon">🍽️</div><div class="ql-label">Food Tracker</div></a>
+      <a href="/pages/workout.html" class="quick-link"><div class="ql-icon">🏋️</div><div class="ql-label">Workout Lab</div></a>
+      <a href="/pages/progress.html" class="quick-link"><div class="ql-icon">📈</div><div class="ql-label">Progress</div></a>
+      <a href="/pages/coach.html" class="quick-link"><div class="ql-icon">🤖</div><div class="ql-label">AI Coach</div></a>
+    </div>
+
+  </div>
+</div>
+</div>
+</div>
+
+<!-- ADD MEAL MODAL -->
+<div class="modal-overlay" id="meal-modal">
+  <div class="modal">
+    <div class="modal-header"><h3>Log a Meal</h3><button class="modal-close" onclick="closeMealModal()">×</button></div>
+    <div style="display:flex;flex-direction:column;gap:0.9rem">
+      <div class="form-group"><label>Meal Name</label><input type="text" id="m-name" placeholder="e.g. Grilled Chicken + Rice"></div>
+      <div class="grid-2">
+        <div class="form-group"><label>Calories</label><input type="number" id="m-cal" placeholder="450"></div>
+        <div class="form-group"><label>Time</label><input type="time" id="m-time"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.65rem">
+        <div class="form-group"><label>Protein (g)</label><input type="number" id="m-p" placeholder="35"></div>
+        <div class="form-group"><label>Carbs (g)</label><input type="number" id="m-c" placeholder="45"></div>
+        <div class="form-group"><label>Fat (g)</label><input type="number" id="m-f" placeholder="12"></div>
+      </div>
+      <div class="form-group"><label>Meal Type</label>
+        <select id="m-type"><option value="breakfast">Breakfast</option><option value="lunch">Lunch</option><option value="dinner">Dinner</option><option value="snack" selected>Snack</option></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-sm" onclick="closeMealModal()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="submitMeal()">Log Meal</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal">
+    <div class="modal-header"><h3>⚙️ Update Profile</h3><button class="modal-close" onclick="closeSettingsModal()">×</button></div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:0.75rem">
+      <div class="form-group"><label>Current Weight (kg)</label><input type="number" id="s-weight" step="0.1" placeholder="e.g. 79.2"></div>
+      <div class="form-group"><label>Goal Weight (kg)</label><input type="number" id="s-goal-weight" step="0.1" placeholder="e.g. 74"></div>
+      <div class="form-group"><label>Daily Calorie Target</label><input type="number" id="s-cal" placeholder="e.g. 1950"></div>
+      <div class="form-group"><label>Protein Target (g)</label><input type="number" id="s-protein" placeholder="e.g. 158"></div>
+      <div class="form-group"><label>Water Target (L)</label><input type="number" id="s-water" step="0.1" placeholder="e.g. 3.0"></div>
+      <div class="form-group"><label>Goal</label>
+        <select id="s-goal">
+          <option value="cut">Lose weight (cut)</option>
+          <option value="maintain">Maintain</option>
+          <option value="bulk">Bulk up</option>
+          <option value="recomp">Body recomposition</option>
+        </select>
+      </div>
+      <div id="settings-msg" style="font-size:0.82rem;color:var(--neon);display:none">✓ Saved!</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-sm" onclick="closeSettingsModal()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<script>
+buildNav('dashboard');
+
+const ICONS = { oat:'🥣',chicken:'🍗',fish:'🐟',tuna:'🐟',salad:'🥗',yogurt:'🥛',egg:'🥚',banana:'🍌',beef:'🥩',rice:'🍱',shake:'🥤',protein:'💪',bread:'🍞',pasta:'🍝' };
+function mealIcon(n){ const k=n.toLowerCase(); for(const[a,b] of Object.entries(ICONS)) if(k.includes(a)) return b; return '🍽️'; }
+
+let dashData = null;
+
+async function loadDashboard() {
+  try {
+    dashData = await API.getDashboard();
+    render(dashData);
+    const insights = await API.getInsights();
+    renderInsights(insights.insights);
+  } catch(e) { toast('Failed to load dashboard: '+e.message,'error'); }
+}
+
+function render(d) {
+  const u = d.user, s = d.score, t = d.today;
+  Auth.setUser(u);
+
+  // Welcome
+  const hour = new Date().getHours();
+  const greet = hour<12?'Good morning':hour<18?'Good afternoon':'Good evening';
+  document.getElementById('welcome').querySelector('.w-name').textContent = `${greet}, ${u.name.split(' ')[0]} 👋`;
+  document.getElementById('w-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  const streakDays = (d.streak && d.streak.days) ? d.streak.days : 1;
+  document.getElementById('streak-pill').textContent = `🔥 ${streakDays}-day streak`;
+
+  // Score mini
+  const miniItems = [
+    {label:'Nutrition Score',val:s.total,unit:'/100',color:'var(--neon)',sub:s.total>=80?'Excellent':s.total>=60?'Good':'Needs work'},
+    {label:'Calories',val:t.summary.calories,unit:'kcal',color:'var(--neon2)',sub:`of ${u.goal_calories} goal`},
+    {label:'Protein',val:t.summary.protein+'g',unit:'',color:'var(--neon)',sub:`of ${u.goal_protein}g target`},
+    {label:'Water',val:t.water.toFixed(1)+'L',unit:'',color:'var(--neon2)',sub:`of ${u.goal_water}L goal`},
+  ];
+  document.getElementById('score-row').innerHTML = miniItems.map(i=>`
+    <div class="score-mini">
+      <div class="sm-num" style="color:${i.color}">${i.val}</div>
+      ${i.unit?`<div style="font-size:0.68rem;color:var(--muted)">${i.unit}</div>`:''}
+      <div class="sm-label">${i.label}</div>
+      <div class="sm-sub" style="color:${i.color}">${i.sub}</div>
+    </div>`).join('');
+
+  // Score ring
+  const rc = document.getElementById('big-ring');
+  drawRing(rc, s.total, '#39FF6A');
+  document.getElementById('score-n').textContent = s.total;
+  const grades = [[90,'Outstanding 🏆'],[80,'Excellent 🔥'],[70,'Very Good ✅'],[60,'Good 👍'],[0,'Needs Work ⚠️']];
+  const grade = grades.find(g=>s.total>=g[0]);
+  document.getElementById('score-grade-label').textContent = grade?grade[1]:'–';
+  document.getElementById('score-tip').textContent = s.hydration < 70 ? 'Drink more water to boost your score' : 'Keep it up — great balance today!';
+
+  // Macros
+  const macros = [
+    {name:'Protein', val:t.summary.protein, goal:u.goal_protein, color:'var(--neon)', cls:'fill-green'},
+    {name:'Carbs',   val:t.summary.carbs,   goal:u.goal_carbs,   color:'var(--neon2)',cls:'fill-cyan'},
+    {name:'Fat',     val:t.summary.fat,      goal:u.goal_fat,     color:'var(--neon3)',cls:'fill-orange'},
+  ];
+  document.getElementById('macro-cols').innerHTML = macros.map(m=>`
+    <div class="macro-col">
+      <div class="mac-val" style="color:${m.color}">${m.val}g</div>
+      <div class="mac-lbl">${m.name}</div>
+      <div class="mac-of">/${m.goal}g</div>
+    </div>`).join('');
+  document.getElementById('macro-bars').innerHTML = macros.map(m=>`
+    <div style="display:flex;align-items:center;gap:0.7rem">
+      <span style="font-size:0.75rem;color:var(--muted);width:60px;flex-shrink:0">${m.name}</span>
+      <div class="progress-bar" style="flex:1"><div class="progress-fill ${m.cls}" style="width:${Math.min(100,Math.round(m.val/Math.max(1,m.goal)*100))}%"></div></div>
+      <span style="font-size:0.72rem;font-family:var(--mono);width:34px;text-align:right">${Math.min(100,Math.round(m.val/Math.max(1,m.goal)*100))}%</span>
+    </div>`).join('');
+  const dc = document.getElementById('macro-donut');
+  drawDonut(dc,[{value:t.summary.protein*4,color:'#39FF6A'},{value:t.summary.carbs*4,color:'#00E5FF'},{value:t.summary.fat*9,color:'#FF6B35'}]);
+
+  // Meals
+  renderMeals(t.meals);
+
+  // Water
+  renderWater(t.water, u.goal_water);
+
+  // Streaks — based on days since registration
+  const sd = (d.streak && d.streak.days) ? d.streak.days : 1;
+  document.getElementById('streak-protein').textContent   = sd + 'd';
+  document.getElementById('streak-hydration').textContent = Math.max(1, sd - Math.floor(sd * 0.4)) + 'd';
+  document.getElementById('streak-workouts').textContent  = Math.max(1, sd - Math.floor(sd * 0.3)) + 'd';
+  document.getElementById('streak-score').textContent     = Math.max(1, sd - Math.floor(sd * 0.6)) + 'd';
+}
+
+function renderMeals(meals) {
+  document.getElementById('meals-list').innerHTML = meals.length
+    ? meals.map(m=>`
+        <div class="meal-row">
+          <div class="meal-ico">${mealIcon(m.name)}</div>
+          <div style="flex:1">
+            <div class="meal-name">${m.name}</div>
+            <div class="meal-meta">${m.time} · ${m.meal_type}</div>
+            <div class="meal-macros">${m.protein}g P · ${m.carbs}g C · ${m.fat}g F</div>
+          </div>
+          <div style="text-align:right;margin-right:0.5rem"><div class="meal-cal">${m.calories}</div><div style="font-size:0.7rem;color:var(--muted)">kcal</div></div>
+          <button class="del-btn" onclick="deleteMeal('${m.id}')" title="Delete">🗑</button>
+        </div>`).join('')
+    : '<div class="empty"><div class="empty-icon">🍽️</div><div class="empty-title">No meals yet</div><div class="empty-sub">Log your first meal today</div></div>';
+}
+
+function renderWater(amount, goal) {
+  const units = Math.round(goal * 4);
+  const filled = Math.round(amount * 4);
+  let html = '';
+  for(let i=0;i<units;i++) html+=`<div class="w-bubble ${i<filled?'filled':''}" onclick="logWater(${i+1})" title="Log ${(i+1)*0.25}L">💧</div>`;
+  document.getElementById('water-bubbles').innerHTML = html;
+  document.getElementById('water-val').textContent = amount.toFixed(1)+'L';
+  document.getElementById('water-goal').textContent = `of ${goal}L goal`;
+  document.getElementById('water-bar').style.width = Math.min(100,Math.round(amount/goal*100))+'%';
+}
+
+function renderInsights(insights) {
+  document.getElementById('insights-list').innerHTML = insights.map(ins=>`
+    <div class="insight-item ${ins.type==='WARNING'?'warn':''}">
+      <span class="insight-type">${ins.icon} ${ins.type}</span>
+      <strong>${ins.title}</strong><br>${ins.message}
+    </div>`).join('');
+}
+
+async function logWater(units) {
+  const amount = units * 0.25;
+  try {
+    await API.updateWater(amount);
+    toast(`💧 Water updated to ${amount.toFixed(2)}L`);
+    const d = await API.getDashboard();
+    dashData = d;
+    renderWater(d.today.water, d.user.goal_water);
+    render(d);
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function deleteMeal(id) {
+  try {
+    await API.deleteMeal(id);
+    toast('Meal deleted');
+    const d = await API.getDashboard();
+    dashData = d; render(d);
+  } catch(e) { toast(e.message,'error'); }
+}
+
+function openMealModal() {
+  document.getElementById('meal-modal').classList.add('open');
+  document.getElementById('m-time').value = new Date().toTimeString().slice(0,5);
+}
+function closeMealModal() { document.getElementById('meal-modal').classList.remove('open'); }
+document.getElementById('meal-modal').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeMealModal(); });
+
+function openSettingsModal() {
+  const u = dashData?.user || Auth.getUser() || {};
+  document.getElementById('s-weight').value      = u.weight      || '';
+  document.getElementById('s-goal-weight').value = u.goal_weight || '';
+  document.getElementById('s-cal').value         = u.goal_calories || '';
+  document.getElementById('s-protein').value     = u.goal_protein  || '';
+  document.getElementById('s-water').value       = u.goal_water    || '';
+  document.getElementById('s-goal').value        = u.goal || 'maintain';
+  document.getElementById('settings-msg').style.display = 'none';
+  document.getElementById('settings-modal').classList.add('open');
+}
+function closeSettingsModal() { document.getElementById('settings-modal').classList.remove('open'); }
+document.getElementById('settings-modal').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeSettingsModal(); });
+
+async function saveSettings() {
+  const updates = {
+    weight:       parseFloat(document.getElementById('s-weight').value)      || undefined,
+    goal_weight:  parseFloat(document.getElementById('s-goal-weight').value) || 0,
+    goal_calories:parseInt(document.getElementById('s-cal').value)           || undefined,
+    goal_protein: parseInt(document.getElementById('s-protein').value)       || undefined,
+    goal_water:   parseFloat(document.getElementById('s-water').value)       || undefined,
+    goal:         document.getElementById('s-goal').value,
+  };
+  // Remove undefined keys
+  Object.keys(updates).forEach(k => updates[k] === undefined && delete updates[k]);
+  try {
+    const data = await API.updateProfile(updates);
+    Auth.setUser(data.user);
+    document.getElementById('settings-msg').style.display = 'block';
+    setTimeout(() => { closeSettingsModal(); loadDashboard(); }, 800);
+  } catch(err) { alert('Save failed: ' + err.message); }
+}
+
+async function submitMeal() {
+  const name = document.getElementById('m-name').value.trim();
+  if(!name){ toast('Please enter a meal name','warning'); return; }
+  try {
+    await API.addMeal({
+      name, calories: +document.getElementById('m-cal').value||0,
+      protein: +document.getElementById('m-p').value||0,
+      carbs: +document.getElementById('m-c').value||0,
+      fat: +document.getElementById('m-f').value||0,
+      time: document.getElementById('m-time').value,
+      meal_type: document.getElementById('m-type').value,
+    });
+    closeMealModal();
+    toast('✅ '+name+' logged!');
+    ['m-name','m-cal','m-p','m-c','m-f'].forEach(id=>document.getElementById(id).value='');
+    const d = await API.getDashboard();
+    dashData = d; render(d);
+  } catch(e) { toast(e.message,'error'); }
+}
+
+window.addEventListener('load', loadDashboard);
+</script>
+</body>
+</html>

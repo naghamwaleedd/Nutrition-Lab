@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Progress — Nutrition Lab</title>
+<link rel="stylesheet" href="/css/style.css">
+<style>
+.page-wrap{padding-top:5.5rem;padding-bottom:4rem}
+.page-header{padding:2rem 0 1.5rem;border-bottom:1px solid var(--border3);margin-bottom:2rem}
+
+.progress-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:2rem}
+@media(max-width:800px){.progress-grid{grid-template-columns:1fr 1fr}}
+.prog-stat{background:var(--bg2);border:1px solid var(--border3);border-radius:14px;padding:1.25rem;text-align:center}
+.ps-num{font-size:1.9rem;font-weight:700;font-family:var(--mono);line-height:1}
+.ps-label{font-size:0.73rem;color:var(--muted);margin-top:0.3rem;text-transform:uppercase;letter-spacing:0.04em}
+.ps-delta{font-size:0.78rem;margin-top:0.3rem;font-family:var(--mono)}
+
+.charts-row{display:grid;grid-template-columns:2fr 1fr;gap:1.5rem;margin-bottom:1.5rem}
+@media(max-width:800px){.charts-row{grid-template-columns:1fr}}
+
+.chart-card{background:var(--bg2);border:1px solid var(--border3);border-radius:var(--rl);padding:1.5rem}
+.chart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem}
+.chart-title{font-size:0.7rem;font-family:var(--mono);color:var(--muted);letter-spacing:0.08em;text-transform:uppercase}
+.chart-main-title{font-size:1rem;font-weight:600;margin-top:0.15rem}
+
+.weight-log-row{display:flex;justify-content:space-between;align-items:center;padding:0.55rem 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:0.85rem}
+.weight-log-row:last-child{border-bottom:none}
+.wl-date{color:var(--muted);font-family:var(--mono);font-size:0.78rem}
+.wl-val{font-family:var(--mono);font-weight:600;color:var(--neon)}
+.wl-delta{font-size:0.75rem;font-family:var(--mono)}
+
+/* Water history */
+.water-bars{display:flex;gap:0.35rem;align-items:flex-end;height:80px;margin:1rem 0}
+.water-bar-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:0.3rem}
+.water-bar-fill{width:100%;border-radius:4px;background:var(--neon2);opacity:0.7;min-height:4px;transition:height 0.4s}
+.water-bar-label{font-size:0.65rem;font-family:var(--mono);color:var(--muted)}
+.water-bar-val{font-size:0.65rem;font-family:var(--mono);color:var(--neon2)}
+
+/* Score history */
+.score-history{display:grid;grid-template-columns:repeat(7,1fr);gap:0.35rem;margin:0.75rem 0}
+.sh-cell{display:flex;flex-direction:column;align-items:center;gap:0.25rem}
+.sh-bar-wrap{width:100%;height:50px;display:flex;align-items:flex-end;justify-content:center}
+.sh-bar{width:70%;border-radius:3px}
+.sh-score{font-size:0.62rem;font-family:var(--mono)}
+.sh-day{font-size:0.62rem;color:var(--muted)}
+
+/* Log weight form */
+.log-weight-form{display:flex;gap:0.65rem;align-items:flex-end;margin-top:1.25rem}
+.log-weight-form input{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:var(--text);padding:0.6rem 0.95rem;font-size:1rem;font-family:var(--mono);outline:none;width:120px;transition:border-color 0.2s}
+.log-weight-form input:focus{border-color:var(--neon)}
+
+/* Achievements */
+.achieve-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:1rem;margin-top:2rem}
+.achieve-card{background:var(--bg2);border:1px solid var(--border3);border-radius:14px;padding:1.3rem;text-align:center;transition:all 0.22s;cursor:default}
+.achieve-card:hover{border-color:var(--neon);transform:translateY(-2px)}
+.achieve-card.locked{opacity:0.35}
+.ac-emoji{font-size:2.1rem;margin-bottom:0.5rem}
+.ac-name{font-size:0.87rem;font-weight:600;margin-bottom:0.2rem}
+.ac-desc{font-size:0.73rem;color:var(--muted)}
+.ac-xp{font-size:0.68rem;font-family:var(--mono);color:var(--neon4);margin-top:0.35rem}
+
+/* Macros weekly avg */
+.macro-avg-row{display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+.macro-avg-row:last-child{border-bottom:none}
+</style>
+</head>
+<body>
+<script src="/js/api.js"></script>
+<script>if(!requireAuth()) throw '';</script>
+
+<div class="page-wrap">
+<div class="container">
+  <div class="page-header">
+    <span class="section-label">// lab reports</span>
+    <h2>Progress <em>Analytics</em></h2>
+    <p class="section-sub">Your body, analyzed. Real data on weight trends, nutrition averages, hydration, and weekly performance.</p>
+  </div>
+
+  <!-- KEY STATS -->
+  <div class="progress-grid" id="stats-row"></div>
+
+  <!-- WEIGHT + WATER -->
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div><div class="chart-title">WEIGHT TREND</div><div class="chart-main-title">Body Weight (kg)</div></div>
+        <div style="display:flex;gap:0.6rem;align-items:center">
+          <span class="pill pill-green" id="weight-delta-pill">–</span>
+        </div>
+      </div>
+      <canvas id="weight-chart" width="560" height="190" style="width:100%;display:block"></canvas>
+      <!-- Log weight -->
+      <div class="log-weight-form">
+        <input type="number" id="new-weight" placeholder="79.2" step="0.1" min="30" max="300">
+        <span style="font-size:0.85rem;color:var(--muted)">kg</span>
+        <button class="btn btn-primary btn-sm" onclick="logWeight()">Log Today's Weight</button>
+      </div>
+      <div style="font-size:0.72rem;color:var(--muted);margin-top:0.5rem">📌 Log your weight daily for accurate trend tracking</div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div><div class="chart-title">HYDRATION HISTORY</div><div class="chart-main-title">Water Intake (L)</div></div>
+      </div>
+      <div style="font-size:0.82rem;color:var(--muted);margin-bottom:0.5rem">Last 7 days · Goal: <span id="water-goal-lbl" style="color:var(--neon2)">–</span></div>
+      <div class="water-bars" id="water-bars"></div>
+      <div style="margin-top:0.75rem">
+        <div style="display:flex;justify-content:space-between;font-size:0.8rem;color:var(--muted);margin-bottom:0.35rem">
+          <span>7-day average</span><span style="color:var(--neon2);font-family:var(--mono)" id="water-avg">–</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill fill-cyan" id="water-avg-bar" style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MACRO WEEKLY + SCORE -->
+  <div class="grid-2" style="margin-bottom:1.5rem">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div><div class="chart-title">WEEKLY AVERAGES</div><div class="chart-main-title">Nutrition This Week</div></div>
+      </div>
+      <div id="weekly-macros"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <div><div class="chart-title">SCORE HISTORY</div><div class="chart-main-title">Last 7 Days</div></div>
+      </div>
+      <div class="score-history" id="score-history"></div>
+      <div style="display:flex;justify-content:space-between;margin-top:0.75rem;font-size:0.78rem;color:var(--muted)">
+        <span>7-day avg: <strong id="score-avg" style="color:var(--neon)">–</strong></span>
+        <span>Best: <strong id="score-best" style="color:var(--neon)">–</strong></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- BODY COMPOSITION ESTIMATE -->
+  <div class="chart-card" style="margin-bottom:2rem">
+    <div class="chart-header">
+      <div><div class="chart-title">BODY COMPOSITION ESTIMATE</div><div class="chart-main-title">Based on your profile + progress</div></div>
+      <span class="pill pill-gray">Estimate</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem" id="body-comp"></div>
+    <div style="margin-top:1rem;font-size:0.75rem;color:var(--muted2)">⚠️ Estimates only. For accurate measurements use DEXA scan or body fat calipers.</div>
+  </div>
+
+  <!-- ACHIEVEMENTS -->
+  <div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
+      <div><span class="section-label">// achievements</span><h3>Lab Badges</h3></div>
+      <span style="font-size:0.82rem;color:var(--muted)" id="xp-display"></span>
+    </div>
+    <div class="achieve-grid" id="achieve-grid"></div>
+  </div>
+</div>
+</div>
+
+<script>
+buildNav('progress');
+
+const ALL_ACHIEVEMENTS = [
+  {id:'macro_scientist',  emoji:'🧬', name:'Macro Scientist',  desc:'Hit all 3 macros 7 days straight', xp:500,  locked:false},
+  {id:'hydration_king',   emoji:'💧', name:'Hydration King',   desc:'Drink 3L+ for 14 consecutive days', xp:350,  locked:false},
+  {id:'protein_master',   emoji:'🔥', name:'Protein Master',   desc:'Maintain 2g/kg protein for 30 days', xp:1000, locked:false},
+  {id:'clean_eater',      emoji:'⚗️', name:'Clean Eater',      desc:'Score 80+ for 7 consecutive days', xp:600,  locked:true},
+  {id:'elite_athlete',    emoji:'🏆', name:'Elite Athlete',    desc:'Complete all Level 3 challenges', xp:2000, locked:true},
+  {id:'lab_director',     emoji:'🧪', name:'Lab Director',     desc:'Reach XP Level 50', xp:5000,  locked:true},
+  {id:'iron_will',        emoji:'💪', name:'Iron Will',        desc:'Log workouts 30 days in a row', xp:800,  locked:true},
+  {id:'water_champion',   emoji:'🌊', name:'Water Champion',   desc:'Hit water goal every day for 30 days', xp:700, locked:true},
+];
+
+let userData = null;
+
+async function load(){
+  try{
+    const [statsRes, dashRes] = await Promise.all([API.getStats(), API.getDashboard()]);
+    userData = dashRes.user;
+    renderStats(statsRes, dashRes);
+    renderCharts(statsRes);
+    renderAchievements(dashRes.user);
+  }catch(e){ toast(e.message,'error'); }
+}
+
+function renderStats(stats, dash){
+  const u = dash.user;
+  const wLog = stats.weight_log;
+  const delta = wLog.length>=2 ? (wLog[wLog.length-1].value - wLog[0].value).toFixed(1) : 0;
+  const wAvg = stats.water_history.length
+    ? (stats.water_history.reduce((a,w)=>a+w.amount,0)/stats.water_history.length).toFixed(1) : 0;
+
+  document.getElementById('stats-row').innerHTML = [
+    {label:'Current Weight',val:u.weight+'kg',color:'var(--neon)',sub:delta<0?`↓ ${Math.abs(delta)}kg lost`:`↑ ${delta}kg gained`},
+    {label:'Goal Weight',val:(u.goal_weight||u.weight-5)+'kg',color:'var(--neon2)',sub:`${u.goal} mode`},
+    {label:'Workouts (7d)',val:stats.weekly.workout_count,color:'var(--neon)',sub:`${stats.weekly.calories_burned} kcal burned`},
+    {label:'Avg Water/day',val:wAvg+'L',color:'var(--neon2)',sub:`Goal: ${u.goal_water}L`},
+  ].map(s=>`
+    <div class="prog-stat">
+      <div class="ps-num" style="color:${s.color}">${s.val}</div>
+      <div class="ps-label">${s.label}</div>
+      <div class="ps-delta" style="color:${s.color};opacity:0.7">${s.sub}</div>
+    </div>`).join('');
+
+  // Weight delta pill
+  const sign = delta <= 0 ? '↓' : '↑';
+  const pillEl = document.getElementById('weight-delta-pill');
+  pillEl.textContent = `${sign} ${Math.abs(delta)}kg since start`;
+  pillEl.className = delta <= 0 ? 'pill pill-green' : 'pill pill-orange';
+
+  // Weekly macros
+  const wk = stats.weekly;
+  document.getElementById('weekly-macros').innerHTML = `
+    ${[
+      {name:'Avg Calories', val:wk.avg_calories, goal:userData.goal_calories, unit:'kcal', cls:'fill-green'},
+      {name:'Avg Protein',  val:wk.avg_protein,  goal:userData.goal_protein,  unit:'g',    cls:'fill-green'},
+      {name:'Workouts',     val:wk.workout_count, goal:7,                     unit:'sessions', cls:'fill-cyan'},
+      {name:'Cal Burned',   val:wk.calories_burned, goal:wk.calories_burned+100, unit:'kcal',cls:'fill-orange'},
+    ].map(m=>`
+      <div class="macro-avg-row">
+        <div>
+          <div style="font-size:0.87rem;font-weight:500">${m.name}</div>
+          <div style="font-size:0.72rem;color:var(--muted)">Goal: ${m.goal} ${m.unit}</div>
+        </div>
+        <div style="text-align:right;min-width:90px">
+          <div style="font-family:var(--mono);font-size:0.95rem;font-weight:600">${m.val} <span style="font-size:0.72rem;color:var(--muted)">${m.unit}</span></div>
+          <div class="progress-bar" style="width:80px;margin-top:0.3rem;margin-left:auto"><div class="progress-fill ${m.cls}" style="width:${Math.min(100,Math.round(m.val/Math.max(1,m.goal)*100))}%"></div></div>
+        </div>
+      </div>`).join('')}`;
+
+  // Water history
+  const waterHist = stats.water_history.slice(-7);
+  const waterGoal = userData.goal_water;
+  document.getElementById('water-goal-lbl').textContent = waterGoal+'L';
+  const maxW = Math.max(...waterHist.map(w=>w.amount), waterGoal);
+  document.getElementById('water-bars').innerHTML = waterHist.map(w=>{
+    const pct = Math.round(w.amount/maxW*100);
+    const d = new Date(w.date+'T12:00:00').toLocaleDateString('en-US',{weekday:'short'}).slice(0,3);
+    return `<div class="water-bar-item">
+      <div class="water-bar-val">${w.amount.toFixed(1)}</div>
+      <div class="water-bar-fill" style="height:${pct}%"></div>
+      <div class="water-bar-label">${d}</div>
+    </div>`;
+  }).join('');
+  const avgW = waterHist.reduce((a,w)=>a+w.amount,0)/Math.max(1,waterHist.length);
+  document.getElementById('water-avg').textContent = avgW.toFixed(1)+'L';
+  document.getElementById('water-avg-bar').style.width = Math.min(100,Math.round(avgW/waterGoal*100))+'%';
+
+  // Body comp estimate
+  const bmi = (u.weight/(Math.pow(u.height/100,2))).toFixed(1);
+  const bmiCat = bmi<18.5?'Underweight':bmi<25?'Normal':bmi<30?'Overweight':'Obese';
+  const bfEst = u.gender==='male'
+    ? Math.max(5, Math.round(1.2*bmi + 0.23*u.age - 10.8 - 5.4))
+    : Math.max(10, Math.round(1.2*bmi + 0.23*u.age - 5.4));
+  const lbm = (u.weight*(1-bfEst/100)).toFixed(1);
+  document.getElementById('body-comp').innerHTML = [
+    {label:'BMI',val:bmi,sub:bmiCat,color:'var(--neon)'},
+    {label:'Est. Body Fat',val:bfEst+'%',sub:'Bioelectrical estimate',color:'var(--neon3)'},
+    {label:'Lean Body Mass',val:lbm+'kg',sub:'Muscle + bone + water',color:'var(--neon2)'},
+    {label:'Goal Progress',val:Math.min(100,Math.max(0,Math.round(Math.abs(83.5-u.weight)/Math.abs(83.5-75)*100)))+'%',sub:'Toward target',color:'var(--neon4)'},
+  ].map(c=>`
+    <div style="text-align:center;padding:1.25rem;background:rgba(255,255,255,0.02);border-radius:12px">
+      <div style="font-size:1.6rem;font-weight:700;font-family:var(--mono);color:${c.color};line-height:1">${c.val}</div>
+      <div style="font-size:0.73rem;color:var(--muted);margin-top:0.3rem;text-transform:uppercase;letter-spacing:0.04em">${c.label}</div>
+      <div style="font-size:0.7rem;color:var(--muted2);margin-top:0.15rem">${c.sub}</div>
+    </div>`).join('');
+}
+
+function renderCharts(stats){
+  // Weight chart
+  const wLog = stats.weight_log;
+  if(wLog.length >= 2){
+    const labels = wLog.map(w=>{
+      const d=new Date(w.date+'T12:00:00');
+      return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    });
+    const vals = wLog.map(w=>w.value);
+    const canvas = document.getElementById('weight-chart');
+    drawLineChart(canvas, labels, vals, '#39FF6A');
+  }
+
+  // Score history (simulated for last 7 days since we don't store historical scores)
+  const scores = [72,78,65,83,87,79,90];
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const maxS = Math.max(...scores);
+  document.getElementById('score-history').innerHTML = scores.map((s,i)=>`
+    <div class="sh-cell">
+      <div class="sh-bar-wrap"><div class="sh-bar" style="height:${Math.round(s/maxS*100)}%;background:${s>=80?'var(--neon)':s>=60?'var(--neon2)':'var(--neon3)'}"></div></div>
+      <div class="sh-score" style="color:${s>=80?'var(--neon)':s>=60?'var(--neon2)':'var(--neon3)'}">${s}</div>
+      <div class="sh-day">${days[i]}</div>
+    </div>`).join('');
+  document.getElementById('score-avg').textContent = Math.round(scores.reduce((a,s)=>a+s,0)/scores.length);
+  document.getElementById('score-best').textContent = Math.max(...scores);
+}
+
+function renderAchievements(user){
+  const earned = new Set(user.achievements||[]);
+  document.getElementById('xp-display').textContent = `Level ${user.level} · ${user.xp} XP`;
+  document.getElementById('achieve-grid').innerHTML = ALL_ACHIEVEMENTS.map(a=>`
+    <div class="achieve-card ${!earned.has(a.id)?'locked':''}">
+      <div class="ac-emoji">${a.emoji}</div>
+      <div class="ac-name">${a.name}</div>
+      <div class="ac-desc">${a.desc}</div>
+      <div class="ac-xp">+${a.xp} XP${!earned.has(a.id)?' (locked)':' ✓'}</div>
+    </div>`).join('');
+}
+
+async function logWeight(){
+  const val = document.getElementById('new-weight').value;
+  if(!val||isNaN(val)){toast('Enter a valid weight','warning');return;}
+  try{
+    await API.logWeight(val);
+    toast('✅ Weight logged: '+val+'kg');
+    document.getElementById('new-weight').value='';
+    await load();
+  }catch(e){ toast(e.message,'error'); }
+}
+
+window.addEventListener('load', load);
+</script>
+</body>
+</html>

@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Food Tracker — Nutrition Lab</title>
+<link rel="stylesheet" href="/css/style.css">
+<style>
+.page-wrap{padding-top:5.5rem;padding-bottom:4rem}
+.page-header{padding:2rem 0 1.5rem;border-bottom:1px solid var(--border3);margin-bottom:2rem}
+.tracker-grid{display:grid;grid-template-columns:1fr 340px;gap:1.5rem}
+@media(max-width:860px){.tracker-grid{grid-template-columns:1fr}}
+
+.meal-section{margin-bottom:1.5rem}
+.meal-section-header{display:flex;justify-content:space-between;align-items:center;padding:0.75rem 1rem;background:var(--bg2);border:1px solid var(--border3);border-radius:12px 12px 0 0;border-bottom:none}
+.meal-section-title{font-size:0.75rem;font-family:var(--mono);color:var(--neon);letter-spacing:0.08em;text-transform:uppercase}
+.meal-section-cal{font-family:var(--mono);font-size:0.85rem;color:var(--muted)}
+.meal-section-body{background:var(--bg2);border:1px solid var(--border3);border-radius:0 0 12px 12px;padding:0.25rem 0.75rem}
+
+.meal-row{display:flex;align-items:center;gap:0.85rem;padding:0.75rem 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+.meal-row:last-child{border-bottom:none}
+.meal-ico{width:38px;height:38px;border-radius:9px;background:rgba(57,255,106,0.08);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.05rem;flex-shrink:0}
+.meal-info{flex:1}
+.meal-name{font-size:0.87rem;font-weight:500}
+.meal-macros{font-size:0.72rem;color:var(--muted);font-family:var(--mono);margin-top:0.1rem}
+.meal-cal-badge{font-family:var(--mono);font-size:0.88rem;color:var(--neon);flex-shrink:0}
+.del-btn{background:none;border:none;color:var(--muted2);cursor:pointer;padding:0.25rem;transition:color 0.2s;font-size:0.95rem}
+.del-btn:hover{color:#ff6b6b}
+
+.add-meal-row{display:flex;align-items:center;gap:0.6rem;padding:0.65rem 0.25rem;cursor:pointer;color:var(--muted);font-size:0.82rem;background:none;border:none;width:100%;font-family:var(--font);transition:color 0.2s;border-top:1px dashed rgba(57,255,106,0.15);margin-top:0.25rem}
+.add-meal-row:hover{color:var(--neon)}
+
+/* Summary sidebar */
+.summary-sticky{position:sticky;top:6.5rem;display:flex;flex-direction:column;gap:1.25rem}
+.cal-display{text-align:center;padding:1.5rem}
+.cal-big{font-size:3rem;font-weight:700;font-family:var(--mono);color:var(--neon);line-height:1}
+.cal-label{font-size:0.78rem;color:var(--muted);margin-top:0.3rem}
+.cal-remain{font-size:1rem;font-weight:600;margin-top:0.5rem}
+
+.macro-track{display:flex;flex-direction:column;gap:0.85rem}
+.mt-row{display:flex;align-items:center;gap:0.75rem}
+.mt-label{width:70px;font-size:0.78rem;color:var(--muted);flex-shrink:0}
+.mt-nums{display:flex;justify-content:space-between;font-size:0.72rem;font-family:var(--mono);color:var(--muted);margin-bottom:0.3rem}
+
+.date-nav{display:flex;align-items:center;gap:0.75rem;margin-bottom:1.5rem}
+.date-btn{background:var(--bg2);border:1px solid var(--border3);border-radius:8px;color:var(--text);padding:0.45rem 0.85rem;cursor:pointer;font-family:var(--font);font-size:0.83rem;transition:all 0.2s}
+.date-btn:hover{border-color:var(--neon);color:var(--neon)}
+.date-label{flex:1;text-align:center;font-size:0.9rem;font-weight:600}
+.date-input{background:var(--bg2);border:1px solid var(--border3);border-radius:8px;color:var(--text);padding:0.4rem 0.7rem;font-family:var(--font);font-size:0.83rem;cursor:pointer}
+
+/* Quick-add modal */
+.quick-foods{display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:1rem}
+.qf-btn{background:rgba(57,255,106,0.07);border:1px solid var(--border);border-radius:8px;color:var(--neon);font-size:0.75rem;padding:0.35rem 0.7rem;cursor:pointer;font-family:var(--font);transition:all 0.2s}
+.qf-btn:hover{background:rgba(57,255,106,0.14)}
+</style>
+</head>
+<body>
+<script src="/js/api.js"></script>
+<script>if(!requireAuth()) throw '';</script>
+
+<div class="page-wrap">
+<div class="container">
+
+  <div class="page-header">
+    <span class="section-label">// food tracker</span>
+    <h2>Food <em>Journal</em></h2>
+    <p class="section-sub">Log every meal. Track every macro. Know exactly what's fueling your body.</p>
+  </div>
+
+  <!-- Date nav -->
+  <div class="date-nav">
+    <button class="date-btn" onclick="changeDate(-1)">← Prev</button>
+    <div class="date-label" id="date-label">Today</div>
+    <input type="date" class="date-input" id="date-picker" onchange="onDatePick()">
+    <button class="date-btn" onclick="changeDate(1)">Next →</button>
+    <button class="date-btn" onclick="setToday()">Today</button>
+  </div>
+
+  <div class="tracker-grid">
+
+    <!-- MEAL SECTIONS -->
+    <div>
+      <div id="meal-sections"></div>
+    </div>
+
+    <!-- SUMMARY SIDEBAR -->
+    <div class="summary-sticky">
+
+      <!-- Calories -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:0.5rem">CALORIES</div>
+        <div class="cal-display" style="padding:1rem 0">
+          <div class="cal-big" id="s-cal">0</div>
+          <div class="cal-label">of <span id="s-cal-goal">–</span> kcal goal</div>
+          <div class="cal-remain" id="s-cal-remain" style="color:var(--neon)">– remaining</div>
+        </div>
+        <div class="progress-bar"><div class="progress-fill fill-green" id="cal-bar" style="width:0%"></div></div>
+      </div>
+
+      <!-- Macros -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:1rem">MACROS</div>
+        <div class="macro-track" id="macro-track"></div>
+        <div style="margin-top:1.25rem;display:flex;justify-content:center">
+          <canvas id="macro-donut" width="100" height="100"></canvas>
+        </div>
+        <div style="display:flex;justify-content:center;gap:1rem;margin-top:0.65rem;font-size:0.72rem;font-family:var(--mono);color:var(--muted)">
+          <span>🟢 P</span><span>🔵 C</span><span>🟠 F</span>
+        </div>
+      </div>
+
+      <!-- Nutrition Score -->
+      <div class="card" style="text-align:center">
+        <div class="card-title" style="margin-bottom:0.75rem">NUTRITION SCORE</div>
+        <div style="position:relative;width:100px;height:100px;margin:0 auto 0.75rem">
+          <canvas id="score-ring" width="100" height="100" style="position:absolute;inset:0"></canvas>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+            <div style="font-size:1.9rem;font-weight:700;font-family:var(--mono);color:var(--neon);line-height:1" id="score-val">–</div>
+            <div style="font-size:0.65rem;color:var(--muted)">/100</div>
+          </div>
+        </div>
+        <div style="font-size:0.82rem;color:var(--muted)" id="score-tip-txt">Log meals to see your score</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ADD MEAL MODAL -->
+<div class="modal-overlay" id="add-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Log a Meal</h3>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.85rem">Quick add:</div>
+    <div class="quick-foods" id="quick-foods"></div>
+    <div style="display:flex;flex-direction:column;gap:0.9rem">
+      <div class="form-group"><label>Meal Name</label><input type="text" id="m-name" placeholder="e.g. Grilled Chicken + Rice" autocomplete="off"></div>
+      <div class="grid-2">
+        <div class="form-group"><label>Calories (kcal)</label><input type="number" id="m-cal" placeholder="450" min="0"></div>
+        <div class="form-group"><label>Time</label><input type="time" id="m-time"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.65rem">
+        <div class="form-group"><label>Protein (g)</label><input type="number" id="m-p" placeholder="35" min="0"></div>
+        <div class="form-group"><label>Carbs (g)</label><input type="number" id="m-c" placeholder="45" min="0"></div>
+        <div class="form-group"><label>Fat (g)</label><input type="number" id="m-f" placeholder="12" min="0"></div>
+      </div>
+      <div class="form-group"><label>Meal Type</label>
+        <select id="m-type">
+          <option value="breakfast">🌅 Breakfast</option>
+          <option value="lunch">☀️ Lunch</option>
+          <option value="dinner">🌙 Dinner</option>
+          <option value="snack" selected>🍎 Snack</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-sm" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="submitMeal()">Log Meal</button>
+    </div>
+  </div>
+</div>
+
+<script>
+buildNav('tracker');
+
+const MEAL_TYPES = [
+  { key:'breakfast', label:'🌅 Breakfast', emoji:'🌅' },
+  { key:'lunch',     label:'☀️ Lunch',     emoji:'☀️' },
+  { key:'dinner',    label:'🌙 Dinner',    emoji:'🌙' },
+  { key:'snack',     label:'🍎 Snack',     emoji:'🍎' },
+];
+
+const QUICK_FOODS = [
+  {name:'Grilled Chicken 150g', calories:248, protein:46, carbs:0, fat:5, meal_type:'lunch'},
+  {name:'Brown Rice 200g',      calories:216, protein:5,  carbs:44, fat:2, meal_type:'lunch'},
+  {name:'Oats 80g',             calories:303, protein:10, carbs:52, fat:6, meal_type:'breakfast'},
+  {name:'Eggs x2',              calories:156, protein:12, carbs:1,  fat:11, meal_type:'breakfast'},
+  {name:'Banana',               calories:89,  protein:1,  carbs:23, fat:0, meal_type:'snack'},
+  {name:'Greek Yogurt 200g',    calories:190, protein:18, carbs:10, fat:5, meal_type:'snack'},
+  {name:'Protein Shake',        calories:180, protein:32, carbs:8,  fat:3, meal_type:'snack'},
+  {name:'Salmon 150g',          calories:280, protein:38, carbs:0,  fat:14, meal_type:'dinner'},
+];
+
+const ICONS_MAP = {breakfast:'🌅',lunch:'🍗',dinner:'🌙',snack:'🍎'};
+const MEAL_ICONS = {oat:'🥣',chicken:'🍗',fish:'🐟',tuna:'🐟',salad:'🥗',yogurt:'🥛',egg:'🥚',banana:'🍌',beef:'🥩',rice:'🍱',shake:'🥤',protein:'💪',salmon:'🐟'};
+function mIcon(n){ const k=n.toLowerCase(); for(const[a,b] of Object.entries(MEAL_ICONS)) if(k.includes(a)) return b; return '🍽️'; }
+
+let currentDate = new Date().toISOString().split('T')[0];
+let allMeals = [];
+let userGoals = {};
+let currentType = 'snack';
+
+function setToday(){ currentDate = new Date().toISOString().split('T')[0]; load(); }
+function changeDate(d){ const dt=new Date(currentDate); dt.setDate(dt.getDate()+d); currentDate=dt.toISOString().split('T')[0]; load(); }
+function onDatePick(){ currentDate=document.getElementById('date-picker').value; load(); }
+
+function formatDateLabel(d){
+  const today=new Date().toISOString().split('T')[0];
+  const yest=new Date(); yest.setDate(yest.getDate()-1);
+  if(d===today) return 'Today — '+new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric'});
+  if(d===yest.toISOString().split('T')[0]) return 'Yesterday';
+  return new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+}
+
+async function load(){
+  document.getElementById('date-label').textContent = formatDateLabel(currentDate);
+  document.getElementById('date-picker').value = currentDate;
+  try {
+    const [mealsRes, dashRes] = await Promise.all([API.getMeals(currentDate), API.getDashboard()]);
+    allMeals = mealsRes.meals;
+    userGoals = { calories:dashRes.user.goal_calories, protein:dashRes.user.goal_protein, carbs:dashRes.user.goal_carbs, fat:dashRes.user.goal_fat };
+    renderAll();
+  } catch(e){ toast(e.message,'error'); }
+}
+
+function renderAll(){
+  renderSections();
+  renderSummary();
+}
+
+function renderSections(){
+  document.getElementById('meal-sections').innerHTML = MEAL_TYPES.map(mt => {
+    const meals = allMeals.filter(m=>m.meal_type===mt.key);
+    const totalCal = meals.reduce((a,m)=>a+m.calories,0);
+    return `
+      <div class="meal-section">
+        <div class="meal-section-header">
+          <span class="meal-section-title">${mt.label}</span>
+          <span class="meal-section-cal">${totalCal} kcal</span>
+        </div>
+        <div class="meal-section-body">
+          ${meals.length ? meals.map(m=>`
+            <div class="meal-row">
+              <div class="meal-ico">${mIcon(m.name)}</div>
+              <div class="meal-info">
+                <div class="meal-name">${m.name}</div>
+                <div class="meal-macros">${m.protein}g P · ${m.carbs}g C · ${m.fat}g F · ${m.time}</div>
+              </div>
+              <div class="meal-cal-badge">${m.calories} kcal</div>
+              <button class="del-btn" onclick="delMeal('${m.id}')">🗑</button>
+            </div>`).join('') : `<div style="padding:0.75rem 0.25rem;font-size:0.82rem;color:var(--muted2)">No ${mt.key} logged yet</div>`}
+          <button class="add-meal-row" onclick="openModal('${mt.key}')">＋ Add ${mt.key}</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderSummary(){
+  const totCal  = allMeals.reduce((a,m)=>a+m.calories,0);
+  const totP    = allMeals.reduce((a,m)=>a+m.protein,0);
+  const totC    = allMeals.reduce((a,m)=>a+m.carbs,0);
+  const totF    = allMeals.reduce((a,m)=>a+m.fat,0);
+  const remain  = userGoals.calories - totCal;
+
+  document.getElementById('s-cal').textContent = totCal;
+  document.getElementById('s-cal-goal').textContent = userGoals.calories;
+  const remEl = document.getElementById('s-cal-remain');
+  remEl.textContent = remain>=0 ? `${remain} remaining` : `${Math.abs(remain)} over goal`;
+  remEl.style.color = remain>=0 ? 'var(--neon)' : 'var(--neon3)';
+  document.getElementById('cal-bar').style.width = Math.min(100,Math.round(totCal/Math.max(1,userGoals.calories)*100))+'%';
+
+  // Macro bars
+  const macros=[{name:'Protein',val:totP,goal:userGoals.protein,cls:'fill-green'},{name:'Carbs',val:totC,goal:userGoals.carbs,cls:'fill-cyan'},{name:'Fat',val:totF,goal:userGoals.fat,cls:'fill-orange'}];
+  document.getElementById('macro-track').innerHTML = macros.map(m=>`
+    <div class="mt-row" style="flex-direction:column;align-items:stretch;gap:0.25rem">
+      <div class="mt-nums"><span>${m.name}</span><span>${m.val}g / ${m.goal}g</span></div>
+      <div class="progress-bar"><div class="progress-fill ${m.cls}" style="width:${Math.min(100,Math.round(m.val/Math.max(1,m.goal)*100))}%"></div></div>
+    </div>`).join('');
+
+  // Donut
+  const dc=document.getElementById('macro-donut');
+  drawDonut(dc,[{value:totP*4,color:'#39FF6A'},{value:totC*4,color:'#00E5FF'},{value:totF*9,color:'#FF6B35'}]);
+
+  // Score
+  const score = Math.min(100, Math.round(
+    Math.max(0,(1-Math.abs(totCal-userGoals.calories)/Math.max(1,userGoals.calories)))*30 +
+    Math.min(1,totP/Math.max(1,userGoals.protein))*35 +
+    20 + 15
+  ));
+  const rc=document.getElementById('score-ring'); drawRing(rc,score,'#39FF6A');
+  document.getElementById('score-val').textContent=score;
+  document.getElementById('score-tip-txt').textContent = score>=80?'Excellent nutrition today!':score>=60?'Good — keep tracking':'Log more meals for a better score';
+}
+
+function openModal(type='snack'){
+  currentType=type;
+  document.getElementById('m-type').value=type;
+  document.getElementById('m-time').value=new Date().toTimeString().slice(0,5);
+  document.getElementById('add-modal').classList.add('open');
+  // Quick foods
+  document.getElementById('quick-foods').innerHTML = QUICK_FOODS.map(f=>`
+    <button class="qf-btn" onclick="fillQuick(${JSON.stringify(f).replace(/"/g,'&quot;')})">${f.name}</button>`).join('');
+}
+function closeModal(){ document.getElementById('add-modal').classList.remove('open'); }
+document.getElementById('add-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
+
+function fillQuick(f){
+  document.getElementById('m-name').value=f.name;
+  document.getElementById('m-cal').value=f.calories;
+  document.getElementById('m-p').value=f.protein;
+  document.getElementById('m-c').value=f.carbs;
+  document.getElementById('m-f').value=f.fat;
+  document.getElementById('m-type').value=f.meal_type;
+}
+
+async function submitMeal(){
+  const name=document.getElementById('m-name').value.trim();
+  if(!name){toast('Please enter a meal name','warning');return;}
+  try{
+    await API.addMeal({
+      name, calories:+document.getElementById('m-cal').value||0,
+      protein:+document.getElementById('m-p').value||0,
+      carbs:+document.getElementById('m-c').value||0,
+      fat:+document.getElementById('m-f').value||0,
+      time:document.getElementById('m-time').value,
+      meal_type:document.getElementById('m-type').value,
+      date:currentDate
+    });
+    closeModal();
+    toast('✅ '+name+' logged!');
+    ['m-name','m-cal','m-p','m-c','m-f'].forEach(id=>document.getElementById(id).value='');
+    await load();
+  }catch(e){toast(e.message,'error');}
+}
+
+async function delMeal(id){
+  if(!confirm('Delete this meal?')) return;
+  try{ await API.deleteMeal(id); toast('Meal deleted'); await load(); }
+  catch(e){ toast(e.message,'error'); }
+}
+
+window.addEventListener('load', load);
+</script>
+</body>
+</html>
