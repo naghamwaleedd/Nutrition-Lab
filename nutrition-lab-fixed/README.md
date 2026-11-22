@@ -1,153 +1,154 @@
-# 🔬 Nutrition Lab — Full-Stack Web Application
+# Nutrition Lab – Full-Stack Web Application
 
-A science-driven nutrition and fitness tracking application built with a pure Node.js backend (no external dependencies) and a multi-page vanilla JS frontend.
+Nutrition Lab is a web application that helps users keep track of their nutrition, workouts, and fitness progress. It includes features such as meal tracking, calorie and macronutrient calculations, workout logging, hydration tracking, and progress reports.
 
----
+The project was built using Node.js for the backend and vanilla HTML, CSS, and JavaScript for the frontend. The backend uses Node.js built-in modules, so no external npm packages are required.
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
-# 1. Run the server (no npm install needed!)
+# 1. Start the server
 node backend/server.js
 
-# 2. Open in browser
+# 2. Open the application
 http://localhost:3000
 
-# 3. Demo login
-Email:    alex@nutritionlab.com
+# 3. Demo account
+Email: alex@nutritionlab.com
 Password: demo123
 ```
 
----
+## Project Structure
 
-## 📁 Project Structure
-
-```
+```text
 nutrition-lab/
 ├── backend/
-│   ├── server.js                  # Main HTTP server (Node.js built-in)
+│   ├── server.js
 │   ├── routes/
-│   │   └── router.js              # Custom router — IoC pattern
+│   │   └── router.js
 │   ├── middleware/
-│   │   └── auth.js                # Auth middleware — DI pattern
+│   │   └── auth.js
 │   ├── controllers/
-│   │   ├── authController.js      # Register / Login / Logout
-│   │   ├── userController.js      # Profile + Dashboard
-│   │   ├── mealController.js      # CRUD for meals
-│   │   ├── workoutController.js   # CRUD for workouts
-│   │   ├── progressController.js  # Weight + Water + Stats
-│   │   └── coachController.js     # AI insights + Chat
+│   │   ├── authController.js
+│   │   ├── userController.js
+│   │   ├── mealController.js
+│   │   ├── workoutController.js
+│   │   ├── progressController.js
+│   │   └── coachController.js
 │   └── data/
-│       └── database.js            # In-memory DB + AI Coach engine
+│       └── database.js
 │
 └── frontend/
-    ├── index.html                 # Landing page
-    ├── css/style.css              # Design system
-    ├── js/api.js                  # API client + chart utilities
+    ├── index.html
+    ├── css/
+    │   └── style.css
+    ├── js/
+    │   └── api.js
     └── pages/
-        ├── login.html             # Login + Register
-        ├── dashboard.html         # Main dashboard
-        ├── tracker.html           # Food tracker
-        ├── workout.html           # Workout lab
-        ├── coach.html             # AI Coach chat
-        └── progress.html          # Analytics + progress
+        ├── login.html
+        ├── dashboard.html
+        ├── tracker.html
+        ├── workout.html
+        ├── coach.html
+        └── progress.html
 ```
 
----
+## Architecture and Design Patterns
 
-## 🏗️ Architecture & Design Patterns
+The backend is organized into separate layers to keep the code easier to manage and maintain.
 
-### Inversion of Control (IoC)
-- The **Router** controls which handler runs — routes register declaratively, dispatch is handled internally
-- **Middleware pipeline**: each function receives `(req, res, next)` and calls `next()` to pass control
-- The framework calls your code — you don't call the framework
+- **Inversion of Control (IoC):** The router handles incoming requests and decides which controller should process each one. Middleware functions also pass requests through the pipeline using `next()`.
+- **Dependency Injection (DI):** Dependencies such as the session store and user store are passed to the authentication middleware instead of being directly created inside it.
+- **Layered Architecture:** The application separates the server, routing, middleware, controllers, and data storage. Each layer has a specific role.
+- **Single Responsibility Principle:** Controllers are separated based on their tasks, such as authentication, meals, workouts, and progress tracking.
 
-### Dependency Injection (DI)
-- **Auth middleware** receives `SessionStore` and `UserStore` as injected dependencies (not hardcoded)
-- **Controllers** receive data stores via `require()` — easily swappable with real DB adapters
-- **Router** injects controllers: `AuthController`, `MealController`, etc. are passed in, not coupled
+### Backend Request Flow
 
-### Layered Architecture
-```
+```text
 HTTP Request
-    ↓
-Server (server.js)        — transport layer
-    ↓
-Router (router.js)        — routing layer
-    ↓
-Middleware (auth.js)      — cross-cutting concerns
-    ↓
-Controller (*Controller)  — business logic
-    ↓
-Data Store (database.js)  — data access layer
+     ↓
+Server
+     ↓
+Router
+     ↓
+Middleware
+     ↓
+Controller
+     ↓
+Data Store
+     ↓
+HTTP Response
 ```
 
-### Single Responsibility Principle
-- Each controller handles exactly one resource (meals, workouts, auth, etc.)
-- The database module only manages data — no HTTP logic
-- The router only maps routes — no business logic
+## REST API
 
----
+The backend provides REST API endpoints for the main application features.
 
-## 🔌 REST API Reference
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/auth/register` | Register a new account |
+| POST | `/api/auth/login` | Log in |
+| POST | `/api/auth/logout` | Log out |
+| GET | `/api/user/profile` | Get user profile |
+| PUT | `/api/user/profile` | Update profile |
+| GET | `/api/user/dashboard` | Get dashboard data |
+| GET | `/api/meals?date=` | Retrieve meals |
+| POST | `/api/meals` | Add a meal |
+| DELETE | `/api/meals/:id` | Delete a meal |
+| GET | `/api/meals/summary` | Get daily nutrition totals |
+| GET | `/api/workouts` | Retrieve workouts |
+| POST | `/api/workouts` | Add a workout |
+| DELETE | `/api/workouts/:id` | Delete a workout |
+| GET | `/api/progress/weight` | Get weight history |
+| POST | `/api/progress/weight` | Record weight |
+| GET | `/api/progress/water` | Get water intake |
+| POST | `/api/progress/water` | Update water intake |
+| GET | `/api/progress/stats` | Get progress statistics |
+| GET | `/api/coach/insights` | Get coaching insights |
+| POST | `/api/coach/chat` | Send a message to the AI Coach |
 
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| POST | `/api/auth/register` | Create account | No |
-| POST | `/api/auth/login` | Log in | No |
-| POST | `/api/auth/logout` | Log out | Yes |
-| GET | `/api/user/profile` | Get profile | Yes |
-| PUT | `/api/user/profile` | Update profile | Yes |
-| GET | `/api/user/dashboard` | Full dashboard data | Yes |
-| GET | `/api/meals?date=` | Get meals | Yes |
-| POST | `/api/meals` | Log a meal | Yes |
-| DELETE | `/api/meals/:id` | Delete a meal | Yes |
-| GET | `/api/meals/summary` | Daily totals | Yes |
-| GET | `/api/workouts` | Get workouts | Yes |
-| POST | `/api/workouts` | Log a workout | Yes |
-| DELETE | `/api/workouts/:id` | Delete a workout | Yes |
-| GET | `/api/progress/weight` | Weight history | Yes |
-| POST | `/api/progress/weight` | Log weight | Yes |
-| GET | `/api/progress/water` | Water today + history | Yes |
-| POST | `/api/progress/water` | Update water | Yes |
-| GET | `/api/progress/stats` | Full stats | Yes |
-| GET | `/api/coach/insights` | AI insights | Yes |
-| POST | `/api/coach/chat` | Chat with AI | Yes |
+## Main Features
 
----
+- User registration, login, and session management
+- Dashboard showing daily nutrition information
+- Meal tracking with breakfast, lunch, dinner, and snack categories
+- Calorie and macronutrient calculations
+- Workout logging and exercise tracking
+- AI Coach with personalized insights and chat
+- Weight tracking and progress charts
+- Daily water intake tracking
+- BMI and body fat percentage estimates
+- Achievements and XP system
+- Responsive interface with dark mode
 
-## 🎯 Key Features
+## Technologies Used
 
-- ✅ User registration + login with session tokens
-- ✅ Daily Nutrition Score (0–100) weighted algorithm
-- ✅ Food tracker with meal types (breakfast/lunch/dinner/snack)
-- ✅ Workout logging with exercise builder
-- ✅ AI Coach — live insights + interactive chat
-- ✅ Progress analytics with weight trend charts
-- ✅ Hydration tracker
-- ✅ Body composition estimates (BMI, body fat %)
-- ✅ Achievements + XP system
-- ✅ Responsive dark-mode UI
+**Backend**
+- Node.js
+- Built-in HTTP, FS, Crypto, and URL modules
 
----
+**Frontend**
+- HTML5
+- CSS3
+- Vanilla JavaScript (ES6+)
 
-## 🛠️ Tech Stack
+**Data Storage**
+- In-memory database with CRUD operations
 
-**Backend:** Node.js (built-in `http`, `fs`, `crypto`, `url` modules) — zero npm dependencies  
-**Frontend:** Vanilla HTML5, CSS3 (custom design system), JavaScript ES6+  
-**Data:** In-memory store with full CRUD (ready to swap with MongoDB/PostgreSQL)  
-**Charts:** Custom Canvas API rendering (no chart libraries)  
-**Auth:** SHA-256 session tokens, Bearer authorization
+**Other**
+- Canvas API for charts
+- Session-based authentication
+- REST APIs
 
----
+## Team Responsibilities
 
-## 👥 Team Responsibilities (Component-Based)
+The project was divided into different components, with each team member responsible for a specific part of the application.
 
-| Component | Responsibility |
-|-----------|---------------|
-| Auth System | Registration, login, session management |
-| Dashboard | Data aggregation, nutrition scoring |
-| Food Tracker | Meal CRUD, macro calculations |
-| Workout Lab | Exercise logging, fuel efficiency |
-| AI Coach | Insight generation, chat engine |
-| Progress Analytics | Charts, stats, body composition |
+| Component | Main Responsibilities |
+|---|---|
+| Authentication | Registration, login, and session management |
+| Dashboard | Displaying user data and calculating nutrition scores |
+| Food Tracker | Adding meals and calculating calories and macros |
+| Workout Lab | Logging workouts and exercises |
+| AI Coach | Generating insights and handling chat messages |
+| Progress Analytics | Tracking weight, water intake, and displaying statistics |
